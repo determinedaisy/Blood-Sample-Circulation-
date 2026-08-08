@@ -15,6 +15,12 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    <x-nav-link
+    :href="route('blood-samples.index')"
+    :active="request()->routeIs('blood-samples.*')"
+>
+    {{ __('Blood Samples') }}
+</x-nav-link>
                 </div>
             </div>
 
