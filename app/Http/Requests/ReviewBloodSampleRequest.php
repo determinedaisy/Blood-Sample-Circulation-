@@ -10,9 +10,14 @@ class ReviewBloodSampleRequest extends FormRequest
      * Determine whether the user is authorized.
      */
     public function authorize(): bool
-    {
-        return true;
-    }
+{
+    return $this->user()
+        && in_array(
+            $this->user()->role,
+            ['lab_staff', 'admin'],
+            true
+        );
+}
 
     /**
      * Validation rules for accepting/rejecting a blood sample.

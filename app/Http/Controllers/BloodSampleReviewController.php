@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\BloodSampleRejectedNotification;
 use App\Http\Requests\ReviewBloodSampleRequest;
 use App\Models\BloodSample;
 use Illuminate\Http\RedirectResponse;
@@ -15,11 +16,29 @@ class BloodSampleReviewController extends Controller
 
     public function index()
 {
-    $bloodSamples = BloodSample::with(['patient', 'collector', 'reviewer'])
-        ->latest()
-        ->get();
+    if (
+        ! auth()->check()
+        || ! in_array(
+            auth()->user()->role,
+            ['lab_staff', 'admin'],
+            true
+        )
+    ) {
+        abort(403);
+    }
 
-    return view('blood-samples.index', compact('bloodSamples'));
+    $bloodSamples = BloodSample::with([
+        'patient',
+        'collector',
+        'reviewer'
+    ])
+    ->latest()
+    ->get();
+
+    return view(
+        'blood-samples.index',
+        compact('bloodSamples')
+    );
 }
     public function update(
         ReviewBloodSampleRequest $request,
@@ -48,11 +67,20 @@ class BloodSampleReviewController extends Controller
         });
 
         if ($data['decision'] === 'rejected') {
-            return back()->with(
-                'warning',
-                'Blood sample rejected successfully.'
-            );
-        }
+
+    $bloodSample->load('patient');
+
+    if ($bloodSample->patient) {
+        $bloodSample->patient->notify(
+            new BloodSampleRejectedNotification($bloodSample)
+        );
+    }
+
+    return back()->with(
+        'warning',
+        'Blood sample rejected successfully. The patient has been notified.'
+    );
+}
 
         return back()->with(
             'success',
