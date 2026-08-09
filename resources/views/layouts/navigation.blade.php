@@ -68,6 +68,15 @@
                     </x-nav-link>
 
                 @endif
+                @if(in_array(auth()->user()->role, ['admin', 'lab_staff', 'sample_collector']))
+    <x-nav-link
+        :href="route('transportation.index')"
+        :active="request()->routeIs('transportation.*')"
+    >
+        {{ __('Transportation') }}
+    </x-nav-link>
+@endif
+
 
             </div>
 

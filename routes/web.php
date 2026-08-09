@@ -1,5 +1,5 @@
 <?php
-
+use App\Http\Controllers\SampleTransportationController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
@@ -74,6 +74,18 @@ Route::post(
 */
 
 Route::middleware('auth')->group(function () {
+
+Route::get('/transportation', [SampleTransportationController::class, 'index'])
+    ->name('transportation.index');
+
+Route::post('/transportation', [SampleTransportationController::class, 'store'])
+    ->name('transportation.store');
+
+Route::patch('/transportation/{transportation}/start', [SampleTransportationController::class, 'start'])
+    ->name('transportation.start');
+
+Route::patch('/transportation/{transportation}/deliver', [SampleTransportationController::class, 'deliver'])
+    ->name('transportation.deliver');
 
     Route::get(
         '/profile',
