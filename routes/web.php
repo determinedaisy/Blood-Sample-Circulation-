@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\SampleTransportationController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
@@ -34,6 +35,8 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+
 /*
 |--------------------------------------------------------------------------
 | Admin Dashboard
@@ -108,23 +111,54 @@ Route::post(
 
 /*
 |--------------------------------------------------------------------------
-| Profile
+| Authenticated Routes
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Transportation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/transportation',
+        [SampleTransportationController::class, 'index']
+    )->name('transportation.index');
+
+    Route::post(
+        '/transportation',
+        [SampleTransportationController::class, 'store']
+    )->name('transportation.store');
+
+    Route::patch(
+        '/transportation/{transportation}/start',
+        [SampleTransportationController::class, 'start']
+    )->name('transportation.start');
+
+    Route::patch(
+        '/transportation/{transportation}/deliver',
+        [SampleTransportationController::class, 'deliver']
+    )->name('transportation.deliver');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/profile',
         [ProfileController::class, 'edit']
     )->name('profile.edit');
 
-
     Route::patch(
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
-
 
     Route::delete(
         '/profile',
