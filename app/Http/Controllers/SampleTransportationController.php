@@ -71,8 +71,8 @@ $deliveredCount = (clone $countQuery)
     ->where('status', 'delivered')
     ->count();
 
-        $bloodSamples = BloodSample::where('status', 'received')
-            ->get();
+        $bloodSamples = BloodSample::where('status', 'collected')
+    ->get();
 
         $collectionCenters = CollectionCenter::where('is_active', true)
             ->get();
