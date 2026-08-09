@@ -24,11 +24,15 @@
 
                 <!-- Dashboard -->
                 <x-nav-link
-                    :href="route('dashboard')"
-                    :active="request()->routeIs('dashboard')"
-                >
-                    {{ __('Dashboard') }}
-                </x-nav-link>
+    :href="auth()->user()->role === 'admin'
+        ? route('admin.dashboard')
+        : route('dashboard')"
+    :active="auth()->user()->role === 'admin'
+        ? request()->routeIs('admin.dashboard')
+        : request()->routeIs('dashboard')"
+>
+    {{ __('Dashboard') }}
+</x-nav-link>
 
 
                 <!-- PATIENT ONLY -->
@@ -220,12 +224,15 @@
 
         <!-- Dashboard -->
         <x-responsive-nav-link
-            :href="route('dashboard')"
-            :active="request()->routeIs('dashboard')"
-        >
-            {{ __('Dashboard') }}
-        </x-responsive-nav-link>
-
+    :href="auth()->user()->role === 'admin'
+        ? route('admin.dashboard')
+        : route('dashboard')"
+    :active="auth()->user()->role === 'admin'
+        ? request()->routeIs('admin.dashboard')
+        : request()->routeIs('dashboard')"
+>
+    {{ __('Dashboard') }}
+</x-responsive-nav-link>
 
         <!-- PATIENT ONLY -->
         @if(Auth::user()->role === 'patient')
