@@ -35,7 +35,10 @@ class BloodSample extends Model
     {
         return $this->belongsTo(User::class, 'patient_id');
     }
-
+    public function transportations()
+{
+    return $this->hasMany(SampleTransportation::class);
+}
     public function collector()
     {
         return $this->belongsTo(User::class, 'collected_by');
