@@ -18,3 +18,9 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+use App\Http\Controllers\InventoryController;
+
+Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
