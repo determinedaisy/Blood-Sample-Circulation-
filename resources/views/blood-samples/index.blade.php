@@ -54,6 +54,26 @@
                         <strong>Patient:</strong>
                         {{ $sample->patient?->name ?? 'Not assigned' }}
                     </p>
+                    @if(auth()->user()->role === 'admin' && $sample->reviewer)
+
+    <p>
+        <strong>Reviewed By:</strong>
+        {{ $sample->reviewer->name }}
+    </p>
+
+    <p>
+        <strong>Lab Staff ID:</strong>
+        {{ $sample->reviewer->id }}
+    </p>
+
+    @if($sample->reviewed_at)
+        <p>
+            <strong>Reviewed At:</strong>
+            {{ $sample->reviewed_at->format('d M Y, h:i A') }}
+        </p>
+    @endif
+
+@endif
 
                     <p>
                         <strong>Collected By:</strong>

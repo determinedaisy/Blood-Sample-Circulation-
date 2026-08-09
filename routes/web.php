@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BloodSampleReviewController;
+use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,11 @@ Route::patch(
     '/blood-samples/{bloodSample}/review',
     [BloodSampleReviewController::class, 'update']
 )->middleware('auth')->name('blood-samples.review');
+
+Route::get(
+    '/my-blood-samples',
+    [PatientBloodSampleController::class, 'index']
+)->middleware('auth')->name('patient.blood-samples.index');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])
