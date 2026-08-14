@@ -9,7 +9,7 @@ class Inventory extends Model
 {
     use HasFactory;
 
-    // These are the exact fields the university requirements asked for
+   
     protected $fillable = [
         'blood_sample_id',
         'refrigerator',
