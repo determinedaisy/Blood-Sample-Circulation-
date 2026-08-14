@@ -8,7 +8,7 @@ use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-
+use Illuminate\Support\Facades\Auth;
 /*
 |--------------------------------------------------------------------------
 | Welcome
@@ -27,8 +27,8 @@ Route::get('/', function () {
 */
 
 Route::get('/dashboard', function () {
-
-    if (auth()->user()->role === 'admin') {
+if (Auth::user()->role === 'admin') {
+    
         return redirect()->route('admin.dashboard');
     }
 
@@ -168,7 +168,7 @@ Route::middleware('auth')->group(function () {
 
 
 require __DIR__.'/auth.php';
-use App\Http\Controllers\InventoryController;
+
 
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
