@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\SampleTransportation;
 class BloodSample extends Model
 {
     use HasFactory;
@@ -43,7 +43,7 @@ class BloodSample extends Model
     {
         return $this->belongsTo(User::class, 'collected_by');
     }
-
+   
     public function reviewer()
     {
         return $this->belongsTo(User::class, 'reviewed_by');
