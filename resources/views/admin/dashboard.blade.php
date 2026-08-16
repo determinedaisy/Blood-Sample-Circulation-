@@ -647,18 +647,31 @@
 
                             plugins: {
 
-                                legend: {
+    legend: {
 
-                                    labels: {
+        position: 'top',
 
-                                        color:
-                                            '#cbd5e1'
+        align: 'end',
 
-                                    }
+        labels: {
 
-                                }
+            color: '#cbd5e1',
 
-                            },
+            boxWidth: 30,
+
+            boxHeight: 10,
+
+            padding: 10,
+
+            font: {
+                size: 12
+            }
+
+        }
+
+    }
+
+},
 
 
                             scales: {
