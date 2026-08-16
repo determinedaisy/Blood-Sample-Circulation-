@@ -29,4 +29,19 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function doctorProfile()
+{
+    return $this->hasOne(DoctorProfile::class);
+}
+public function donorReviews()
+{
+    return $this->hasMany(DonorReview::class, 'donor_id');
+}
+
+
+
+public function doctorReviews()
+{
+    return $this->hasMany(DonorReview::class, 'doctor_id');
+}
 }
