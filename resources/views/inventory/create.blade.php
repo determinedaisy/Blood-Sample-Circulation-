@@ -91,9 +91,38 @@
                     <fieldset>
                         <legend class="font-mono text-[11px] tracking-[0.14em] text-cold uppercase font-semibold mb-3">Sample identity</legend>
                         <label for="blood_sample_id" class="block text-sm font-semibold text-ink mb-1">Blood sample ID</label>
-                        <input type="number" id="blood_sample_id" name="blood_sample_id" required placeholder="e.g. 214"
-                               class="block w-full font-mono rounded-md border border-line px-3 py-2.5 text-ink shadow-sm focus:border-cold focus:outline-none focus:ring-1 focus:ring-cold sm:text-sm">
-                        <p class="mt-1.5 text-xs text-inksoft">Displayed as a 4-digit tag, e.g. <span class="font-mono">#0214</span>.</p>
+                        <div>
+    
+
+    <select
+        id="blood_sample_id"
+        name="blood_sample_id"
+        required
+        class="w-full rounded-md border-gray-300"
+    >
+        <option value="">
+            Select an accepted blood sample
+        </option>
+
+        @foreach($bloodSamples as $sample)
+            <option
+                value="{{ $sample->id }}"
+                {{ old('blood_sample_id') == $sample->id ? 'selected' : '' }}
+            >
+                {{ $sample->sample_code }}
+                —
+                {{ $sample->blood_type ?? 'Unknown blood type' }}
+            </option>
+        @endforeach
+    </select>
+
+    @error('blood_sample_id')
+        <p class="text-sm text-red-600 mt-1">
+            {{ $message }}
+        </p>
+    @enderror
+</div>
+                     
                     </fieldset>
 
                     <div class="border-t border-linesoft"></div>

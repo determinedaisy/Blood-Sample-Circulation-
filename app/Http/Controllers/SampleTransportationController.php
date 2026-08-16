@@ -7,6 +7,7 @@ use App\Models\CollectionCenter;
 use App\Models\Laboratory;
 use App\Models\SampleTransportation;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -18,9 +19,9 @@ class SampleTransportationController extends Controller
     public function index(Request $request)
     {
         if (
-            !auth()->check()
+            !Auth::check()
             || !in_array(
-                auth()->user()->role,
+                Auth::user()->role,
                 ['admin', 'lab_staff','sample_collector'],
                 true
             )
@@ -42,8 +43,8 @@ class SampleTransportationController extends Controller
 ]);
 
 // Sample collectors should only see their own assigned transportations.
-if (auth()->user()->role === 'sample_collector') {
-    $query->where('transported_by', auth()->id());
+if (Auth::user()->role === 'sample_collector') {
+    $query->where('transported_by', Auth::id());
 }
         if ($filter !== 'all') {
             $query->where('status', $filter);
@@ -55,8 +56,8 @@ if (auth()->user()->role === 'sample_collector') {
 
      $countQuery = SampleTransportation::query();
 
-if (auth()->user()->role === 'sample_collector') {
-    $countQuery->where('transported_by', auth()->id());
+if (Auth::user()->role === 'sample_collector') {
+    $countQuery->where('transported_by', Auth::id());
 }
 
 $pendingCount = (clone $countQuery)
@@ -71,7 +72,8 @@ $deliveredCount = (clone $countQuery)
     ->where('status', 'delivered')
     ->count();
 
-        $bloodSamples = BloodSample::where('status', 'collected')
+        $bloodSamples = BloodSample::where('status', 'pending')
+    ->whereDoesntHave('transportations')
     ->get();
 
         $collectionCenters = CollectionCenter::where('is_active', true)
@@ -105,9 +107,9 @@ $deliveredCount = (clone $countQuery)
     public function store(Request $request): RedirectResponse
     {
         if (
-            !auth()->check()
+            !Auth::check()
             || !in_array(
-                auth()->user()->role,
+                Auth::user()->role,
                 ['admin', 'lab_staff'],
                 true
             )
@@ -123,20 +125,17 @@ $deliveredCount = (clone $countQuery)
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $alreadyExists = SampleTransportation::where(
-            'blood_sample_id',
-            $validated['blood_sample_id']
-        )
-            ->whereIn('status', ['pending', 'in_transit'])
-            ->exists();
+       $alreadyExists = SampleTransportation::where(
+    'blood_sample_id',
+    $validated['blood_sample_id']
+)->exists();
 
-        if ($alreadyExists) {
-            return back()->with(
-                'error',
-                'This blood sample already has an active transportation record.'
-            );
-        }
-
+if ($alreadyExists) {
+    return back()->with(
+        'error',
+        'This blood sample has already been assigned for transportation.'
+    );
+}
         SampleTransportation::create([
             ...$validated,
             'status' => 'pending',
@@ -156,8 +155,8 @@ $deliveredCount = (clone $countQuery)
     ): RedirectResponse {
 
         if (
-            !auth()->check()
-            || auth()->user()->role !== 'sample_collector'
+            !Auth::check()
+            || Auth::user()->role !== 'sample_collector'
         ) {
             abort(403);
         }
@@ -169,7 +168,7 @@ $deliveredCount = (clone $countQuery)
             );
         }
 
-        if ((int) $transportation->transported_by !== (int) auth()->id()) {
+        if ((int) $transportation->transported_by !== (int) Auth::id()) {
             return back()->with(
                 'error',
                 'You are not assigned to this transportation.'
@@ -195,9 +194,9 @@ $deliveredCount = (clone $countQuery)
     ): RedirectResponse {
 
        if (
-    !auth()->check()
-    || auth()->user()->role !== 'sample_collector'
-    || (int) $transportation->transported_by !== (int) auth()->id()
+    !Auth::check()
+    || Auth::user()->role !== 'sample_collector'
+    || (int) $transportation->transported_by !== (int) Auth::id()
 ) {
     abort(403);
 
