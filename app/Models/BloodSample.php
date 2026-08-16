@@ -43,7 +43,10 @@ class BloodSample extends Model
     {
         return $this->belongsTo(User::class, 'collected_by');
     }
-   
+   public function sampleRequest()
+{
+    return $this->hasOne(SampleRequest::class);
+}
     public function reviewer()
     {
         return $this->belongsTo(User::class, 'reviewed_by');
