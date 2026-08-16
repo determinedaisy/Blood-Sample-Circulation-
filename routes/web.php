@@ -1,14 +1,20 @@
 <?php
 
+
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\SampleTransportationController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\EmergencySOSController;
+use App\Http\Controllers\DonorRequestController;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Welcome
@@ -20,6 +26,8 @@ Route::get('/', function () {
 });
 
 
+
+
 /*
 |--------------------------------------------------------------------------
 | Dashboard
@@ -27,14 +35,22 @@ Route::get('/', function () {
 */
 
 Route::get('/dashboard', function () {
-if (Auth::user()->role === 'admin') {
-    
+
+
+    if (Auth::user()->role === 'admin') {
+
         return redirect()->route('admin.dashboard');
+
     }
+
 
     return view('dashboard');
 
+
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+
+
 
 
 /*
@@ -49,6 +65,9 @@ Route::get(
 )->middleware('auth')->name('admin.dashboard');
 
 
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Blood Sample Review
@@ -61,10 +80,14 @@ Route::get(
 )->middleware('auth')->name('blood-samples.index');
 
 
+
 Route::patch(
     '/blood-samples/{bloodSample}/review',
     [BloodSampleReviewController::class, 'update']
 )->middleware('auth')->name('blood-samples.review');
+
+
+
 
 
 /*
@@ -79,10 +102,25 @@ Route::get(
 )->middleware('auth')->name('inventory.index');
 
 
+Route::get(
+    '/inventory/create',
+    [InventoryController::class, 'create']
+)->middleware('auth')->name('inventory.create');
+
+
+Route::post(
+    '/inventory',
+    [InventoryController::class, 'store']
+)->middleware('auth')->name('inventory.store');
+
+
 Route::patch(
     '/inventory/{bloodSample}/collect',
     [InventoryController::class, 'collect']
 )->middleware('auth')->name('inventory.collect');
+
+
+
 
 
 /*
@@ -109,6 +147,10 @@ Route::post(
 )->middleware('auth')->name('patient.blood-samples.store');
 
 
+
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes
@@ -117,31 +159,85 @@ Route::post(
 
 Route::middleware('auth')->group(function () {
 
+
+
+    /*
+|--------------------------------------------------------------------------
+| Emergency SOS
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get(
+    '/sos',
+    [EmergencySOSController::class, 'index']
+)->name('sos.index');
+
+
+
+Route::post(
+    '/sos',
+    [EmergencySOSController::class, 'store']
+)->name('sos.store');
+
+
+
+Route::get(
+    '/sos/results',
+    [EmergencySOSController::class, 'results']
+)->name('sos.results');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Donor Request
+    |--------------------------------------------------------------------------
+    */
+
+
+    Route::post(
+        '/donor-request/{donor}',
+        [DonorRequestController::class, 'store']
+    )->name('donor.request');
+
+
+
+
+
     /*
     |--------------------------------------------------------------------------
     | Transportation
     |--------------------------------------------------------------------------
     */
 
+
     Route::get(
         '/transportation',
         [SampleTransportationController::class, 'index']
     )->name('transportation.index');
+
+
 
     Route::post(
         '/transportation',
         [SampleTransportationController::class, 'store']
     )->name('transportation.store');
 
+
+
     Route::patch(
         '/transportation/{transportation}/start',
         [SampleTransportationController::class, 'start']
     )->name('transportation.start');
 
+
+
     Route::patch(
         '/transportation/{transportation}/deliver',
         [SampleTransportationController::class, 'deliver']
     )->name('transportation.deliver');
+
+
+
 
 
     /*
@@ -150,26 +246,29 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
 
+
     Route::get(
         '/profile',
         [ProfileController::class, 'edit']
     )->name('profile.edit');
+
+
 
     Route::patch(
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
 
+
+
     Route::delete(
         '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
+
+
 });
 
 
+
 require __DIR__.'/auth.php';
-
-
-Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
-Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
