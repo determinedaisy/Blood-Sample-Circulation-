@@ -61,7 +61,7 @@
                     </x-nav-link>
 
 
-                    <!-- My Blood Samples -->
+                    <!-- My Samples -->
                     <x-nav-link
                         :href="route('patient.blood-samples.index')"
                         :active="request()->routeIs('patient.blood-samples.*')"
@@ -87,7 +87,7 @@
                     </x-nav-link>
 
 
-                    <!-- Incoming Patient Requests -->
+                    <!-- Incoming Requests -->
                     <x-nav-link
                         :href="route('reception-requests.receptionist.index')"
                         :active="request()->routeIs('reception-requests.receptionist.*')
@@ -222,6 +222,15 @@
                     </x-nav-link>
 
                 @endif
+
+
+                <!-- Emergency SOS -->
+                <x-nav-link
+                    :href="route('sos.index')"
+                    :active="request()->routeIs('sos.*')"
+                >
+                    🚨 {{ __('Emergency SOS') }}
+                </x-nav-link>
 
             </div>
 
@@ -564,6 +573,15 @@
             </x-responsive-nav-link>
 
         @endif
+
+
+        <!-- Emergency SOS -->
+        <x-responsive-nav-link
+            :href="route('sos.index')"
+            :active="request()->routeIs('sos.*')"
+        >
+            🚨 {{ __('Emergency SOS') }}
+        </x-responsive-nav-link>
 
     </div>
 
