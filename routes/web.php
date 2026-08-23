@@ -1,6 +1,6 @@
 <?php
 
-
+use App\Http\Controllers\SampleHistoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\SampleTransportationController;
 use App\Http\Controllers\BloodSampleReviewController;
@@ -272,3 +272,19 @@ Route::get(
 
 
 require __DIR__.'/auth.php';
+
+
+
+
+## SAMPLE HISTORY ROUTE #######
+
+Route::get('/sample-history/{sample_code}', [SampleHistoryController::class, 'show'])->name('sample.history');
+
+
+
+
+
+#### Homapage Route ####
+Route::get('/', function () {
+    return view('home');
+})->name('home');
