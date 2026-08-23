@@ -9,6 +9,7 @@ use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EmergencySOSController;
 use App\Http\Controllers\DonorRequestController;
+use App\Http\Controllers\EmergencyPriorityController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -36,16 +37,13 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
 
-
     if (Auth::user()->role === 'admin') {
 
         return redirect()->route('admin.dashboard');
 
     }
 
-
     return view('dashboard');
-
 
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -66,6 +64,25 @@ Route::get(
 
 
 
+/*
+|--------------------------------------------------------------------------
+| Emergency Priority Management - Feature 18
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/admin/emergency-priority',
+    [EmergencyPriorityController::class, 'index']
+)->middleware('auth')->name('admin.emergency-priority');
+
+
+Route::patch(
+    '/admin/emergency-priority/{emergencyRequest}',
+    [EmergencyPriorityController::class, 'update']
+)->middleware('auth')->name('admin.emergency-priority.update');
+
+
+
 
 
 /*
@@ -78,7 +95,6 @@ Route::get(
     '/blood-samples',
     [BloodSampleReviewController::class, 'index']
 )->middleware('auth')->name('blood-samples.index');
-
 
 
 Route::patch(
@@ -150,7 +166,6 @@ Route::post(
 
 
 
-
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes
@@ -160,32 +175,30 @@ Route::post(
 Route::middleware('auth')->group(function () {
 
 
-
     /*
-|--------------------------------------------------------------------------
-| Emergency SOS
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | Emergency SOS
+    |--------------------------------------------------------------------------
+    */
 
 
-Route::get(
-    '/sos',
-    [EmergencySOSController::class, 'index']
-)->name('sos.index');
+    Route::get(
+        '/sos',
+        [EmergencySOSController::class, 'index']
+    )->name('sos.index');
 
 
-
-Route::post(
-    '/sos',
-    [EmergencySOSController::class, 'store']
-)->name('sos.store');
-
+    Route::post(
+        '/sos',
+        [EmergencySOSController::class, 'store']
+    )->name('sos.store');
 
 
-Route::get(
-    '/sos/results',
-    [EmergencySOSController::class, 'results']
-)->name('sos.results');
+    Route::get(
+        '/sos/results',
+        [EmergencySOSController::class, 'results']
+    )->name('sos.results');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -216,19 +229,16 @@ Route::get(
     )->name('transportation.index');
 
 
-
     Route::post(
         '/transportation',
         [SampleTransportationController::class, 'store']
     )->name('transportation.store');
 
 
-
     Route::patch(
         '/transportation/{transportation}/start',
         [SampleTransportationController::class, 'start']
     )->name('transportation.start');
-
 
 
     Route::patch(
@@ -253,18 +263,16 @@ Route::get(
     )->name('profile.edit');
 
 
-
     Route::patch(
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
 
 
-
     Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
+    '/profile',
+    [ProfileController::class, 'destroy']
+)->name('profile.destroy');
 
 
 });
@@ -276,15 +284,28 @@ require __DIR__.'/auth.php';
 
 
 
-## SAMPLE HISTORY ROUTE #######
 
-Route::get('/sample-history/{sample_code}', [SampleHistoryController::class, 'show'])->name('sample.history');
+/*
+|--------------------------------------------------------------------------
+| SAMPLE HISTORY
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/sample-history/{sample_code}',
+    [SampleHistoryController::class, 'show']
+)->name('sample.history');
 
 
 
 
 
-#### Homapage Route ####
+/*
+|--------------------------------------------------------------------------
+| Homepage
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', function () {
     return view('home');
 })->name('home');

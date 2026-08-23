@@ -58,13 +58,30 @@
             </x-nav-link>
 
 
-            <!-- Emergency SOS -->
-            <x-nav-link
-                :href="route('sos.index')"
-                :active="request()->routeIs('sos.*')"
-            >
-                🚨 {{ __('Emergency SOS') }}
-            </x-nav-link>
+            <!-- Emergency SOS - Patient Only -->
+            @if(auth()->user()->role === 'patient')
+
+                <x-nav-link
+                    :href="route('sos.index')"
+                    :active="request()->routeIs('sos.*')"
+                >
+                    🚨 {{ __('Emergency SOS') }}
+                </x-nav-link>
+
+            @endif
+
+
+            <!-- Emergency Priority - Admin & Doctor -->
+            @if(in_array(auth()->user()->role, ['admin', 'doctor']))
+
+                <x-nav-link
+                    :href="route('admin.emergency-priority')"
+                    :active="request()->routeIs('admin.emergency-priority*')"
+                >
+                    {{ __('Emergency Priority') }}
+                </x-nav-link>
+
+            @endif
 
 
         </div>
@@ -106,9 +123,9 @@
                             <path
                                 fill-rule="evenodd"
                                 d="M5.293 7.293a1 1 0 011.414 0L10
-                                10.586l3.293-3.293a1 1 0
-                                111.414 1.414l-4 4a1 1 0
-                                01-1.414 0l-4-4a1 1 0
+                                10.586l3.293-3.293a1 1
+                                0 111.414 1.414l-4 4a1 1
+                                01-1.414 0l-4-4a1 1
                                 010-1.414z"
                                 clip-rule="evenodd"
                             />
@@ -200,8 +217,8 @@
 
 <!-- Responsive Navigation Menu -->
 
-<div 
-    :class="{'block': open, 'hidden': ! open}" 
+<div
+    :class="{'block': open, 'hidden': ! open}"
     class="hidden sm:hidden"
 >
 
@@ -209,6 +226,7 @@
     <div class="pt-2 pb-3 space-y-1">
 
 
+        <!-- Dashboard -->
         <x-responsive-nav-link
             :href="auth()->user()->role === 'admin'
                 ? route('admin.dashboard')
@@ -219,7 +237,7 @@
         </x-responsive-nav-link>
 
 
-
+        <!-- Blood Samples -->
         <x-responsive-nav-link
             :href="route('blood-samples.index')"
             :active="request()->routeIs('blood-samples.*')"
@@ -228,7 +246,7 @@
         </x-responsive-nav-link>
 
 
-
+        <!-- Inventory -->
         <x-responsive-nav-link
             :href="route('inventory.index')"
             :active="request()->routeIs('inventory.*')"
@@ -237,7 +255,7 @@
         </x-responsive-nav-link>
 
 
-
+        <!-- Transportation -->
         <x-responsive-nav-link
             :href="route('transportation.index')"
             :active="request()->routeIs('transportation.*')"
@@ -246,13 +264,30 @@
         </x-responsive-nav-link>
 
 
+        <!-- Emergency SOS - Patient Only -->
+        @if(auth()->user()->role === 'patient')
 
-        <x-responsive-nav-link
-            :href="route('sos.index')"
-            :active="request()->routeIs('sos.*')"
-        >
-            🚨 Emergency SOS
-        </x-responsive-nav-link>
+            <x-responsive-nav-link
+                :href="route('sos.index')"
+                :active="request()->routeIs('sos.*')"
+            >
+                🚨 {{ __('Emergency SOS') }}
+            </x-responsive-nav-link>
+
+        @endif
+
+
+        <!-- Emergency Priority - Admin & Doctor -->
+        @if(in_array(auth()->user()->role, ['admin', 'doctor']))
+
+            <x-responsive-nav-link
+                :href="route('admin.emergency-priority')"
+                :active="request()->routeIs('admin.emergency-priority*')"
+            >
+                {{ __('Emergency Priority') }}
+            </x-responsive-nav-link>
+
+        @endif
 
 
     </div>
@@ -293,13 +328,12 @@
                 <x-responsive-nav-link
                     :href="route('logout')"
                     onclick="
-                    event.preventDefault();
-                    this.closest('form').submit();
+                        event.preventDefault();
+                        this.closest('form').submit();
                     "
                 >
                     {{ __('Log Out') }}
                 </x-responsive-nav-link>
-
 
             </form>
 
