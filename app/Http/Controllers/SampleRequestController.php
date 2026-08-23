@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BloodSample;
 use App\Models\CollectionCenter;
+use App\Models\HomeCollectionRequest;
 use App\Models\Laboratory;
 use App\Models\SampleRequest;
 use App\Models\SampleTransportation;
@@ -20,9 +21,6 @@ class SampleRequestController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Patient: show own sample requests.
-     */
     public function patientIndex()
     {
         if (!Auth::check() || Auth::user()->role !== 'patient') {
@@ -31,8 +29,12 @@ class SampleRequestController extends Controller
 
         $requests = SampleRequest::with([
             'requester',
-            'bloodSample.transportations.transporter',
             'approver',
+            'assignedDoctor.doctorProfile',
+            'homeCollection.assignedCollector',
+            'bloodSample.transportations.transporter',
+            'bloodSample.transportations.collectionCenter',
+            'bloodSample.transportations.laboratory',
         ])
             ->where('patient_id', Auth::id())
             ->latest()
@@ -45,9 +47,6 @@ class SampleRequestController extends Controller
     }
 
 
-    /**
-     * Patient: show request form.
-     */
     public function create()
     {
         if (!Auth::check() || Auth::user()->role !== 'patient') {
@@ -58,9 +57,6 @@ class SampleRequestController extends Controller
     }
 
 
-    /**
-     * Patient: submit own sample request.
-     */
     public function store(Request $request): RedirectResponse
     {
         if (!Auth::check() || Auth::user()->role !== 'patient') {
@@ -68,39 +64,78 @@ class SampleRequestController extends Controller
         }
 
         $validated = $request->validate([
-            'sample_type' => ['required', 'string', 'max:100'],
-            'blood_type' => ['nullable', 'string', 'max:10'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'sample_type' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'blood_type' => [
+                'nullable',
+                'string',
+                'max:10',
+            ],
+
+            'notes' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
         ]);
 
-        /*
-         * Create pending blood sample immediately.
-         */
         $bloodSample = BloodSample::create([
-            'sample_code' => 'BS-' . strtoupper(substr(uniqid(), -8)),
-            'patient_id' => Auth::id(),
-            'sample_type' => $validated['sample_type'],
-            'blood_type' => $validated['blood_type'] ?? null,
-            'status' => 'pending',
+            'sample_code' =>
+                'BS-' . strtoupper(substr(uniqid(), -8)),
 
-            'collected_by' => null,
-            'collected_at' => null,
-            'reviewed_by' => null,
-            'reviewed_at' => null,
-            'rejection_reason' => null,
+            'patient_id' =>
+                Auth::id(),
+
+            'sample_type' =>
+                $validated['sample_type'],
+
+            'blood_type' =>
+                $validated['blood_type'] ?? null,
+
+            'status' =>
+                'pending',
+
+            'collected_by' =>
+                null,
+
+            'collected_at' =>
+                null,
+
+            'reviewed_by' =>
+                null,
+
+            'reviewed_at' =>
+                null,
+
+            'rejection_reason' =>
+                null,
         ]);
 
-        /*
-         * Create request and connect it to blood sample.
-         */
         SampleRequest::create([
-            'patient_id' => Auth::id(),
-            'requested_by' => Auth::id(),
-            'blood_sample_id' => $bloodSample->id,
-            'sample_type' => $validated['sample_type'],
-            'blood_type' => $validated['blood_type'] ?? null,
-            'status' => 'pending',
-            'notes' => $validated['notes'] ?? null,
+            'patient_id' =>
+                Auth::id(),
+
+            'requested_by' =>
+                Auth::id(),
+
+            'blood_sample_id' =>
+                $bloodSample->id,
+
+            'sample_type' =>
+                $validated['sample_type'],
+
+            'blood_type' =>
+                $validated['blood_type'] ?? null,
+
+            'status' =>
+                'pending',
+
+            'notes' =>
+                $validated['notes'] ?? null,
         ]);
 
         return redirect()
@@ -112,25 +147,34 @@ class SampleRequestController extends Controller
     }
 
 
-    /**
-     * Patient: track complete request/sample/transport lifecycle.
-     */
-    public function tracking(SampleRequest $sampleRequest)
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | TRACKING
+    |--------------------------------------------------------------------------
+    */
+
+    public function tracking(
+        SampleRequest $sampleRequest
+    ) {
         if (!Auth::check() || Auth::user()->role !== 'patient') {
             abort(403);
         }
 
-        /*
-         * Patient can only track their own request.
-         */
-        if ((int) $sampleRequest->patient_id !== (int) Auth::id()) {
+        if (
+            (int) $sampleRequest->patient_id
+            !==
+            (int) Auth::id()
+        ) {
             abort(403);
         }
 
         $sampleRequest->load([
             'requester',
             'approver',
+            'assignedDoctor.doctorProfile',
+
+            'homeCollection.assignedCollector',
+
             'bloodSample.transportations.transporter',
             'bloodSample.transportations.collectionCenter',
             'bloodSample.transportations.laboratory',
@@ -139,15 +183,254 @@ class SampleRequestController extends Controller
         $transportation = $sampleRequest
             ->bloodSample
             ?->transportations
+            ?->sortByDesc('id')
             ?->first();
+
+        $homeCollection =
+            $sampleRequest->homeCollection;
 
         return view(
             'sample-requests.tracking',
             compact(
                 'sampleRequest',
-                'transportation'
+                'transportation',
+                'homeCollection'
             )
         );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | HOME SAMPLE COLLECTION - PATIENT
+    |--------------------------------------------------------------------------
+    */
+
+    public function homeCollectionCreate(
+        SampleRequest $sampleRequest
+    ) {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'patient'
+        ) {
+            abort(403);
+        }
+
+        if (
+            (int) $sampleRequest->patient_id
+            !==
+            (int) Auth::id()
+        ) {
+            abort(403);
+        }
+
+        if ($sampleRequest->status !== 'approved') {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'Your sample request must be approved before requesting home collection.'
+                );
+        }
+
+        if (!$sampleRequest->blood_sample_id) {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'No blood sample is connected to this request.'
+                );
+        }
+
+        if (
+            $sampleRequest
+                ->homeCollection()
+                ->exists()
+        ) {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'A home collection request already exists for this sample.'
+                );
+        }
+
+        $transportationExists =
+            SampleTransportation::where(
+                'blood_sample_id',
+                $sampleRequest->blood_sample_id
+            )->exists();
+
+        if ($transportationExists) {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'Collection or transportation has already been arranged for this sample.'
+                );
+        }
+
+        return view(
+            'sample-requests.home_collection_create',
+            compact('sampleRequest')
+        );
+    }
+
+
+    public function homeCollectionStore(
+        Request $request,
+        SampleRequest $sampleRequest
+    ): RedirectResponse {
+
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'patient'
+        ) {
+            abort(403);
+        }
+
+        if (
+            (int) $sampleRequest->patient_id
+            !==
+            (int) Auth::id()
+        ) {
+            abort(403);
+        }
+
+        if ($sampleRequest->status !== 'approved') {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'Your sample request must be approved before requesting home collection.'
+                );
+        }
+
+        if (!$sampleRequest->blood_sample_id) {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'No blood sample is connected to this request.'
+                );
+        }
+
+        if (
+            $sampleRequest
+                ->homeCollection()
+                ->exists()
+        ) {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'A home collection request already exists for this sample.'
+                );
+        }
+
+        $transportationExists =
+            SampleTransportation::where(
+                'blood_sample_id',
+                $sampleRequest->blood_sample_id
+            )->exists();
+
+        if ($transportationExists) {
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'error',
+                    'Collection or transportation has already been arranged for this sample.'
+                );
+        }
+
+        $validated = $request->validate([
+            'address' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'latitude' => [
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'longitude' => [
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+
+            'preferred_date' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+            ],
+
+            'preferred_time' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'instructions' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        HomeCollectionRequest::create([
+            'sample_request_id' =>
+                $sampleRequest->id,
+
+            'patient_id' =>
+                Auth::id(),
+
+            'assigned_collector_id' =>
+                null,
+
+            'address' =>
+                $validated['address'],
+
+            'latitude' =>
+                $validated['latitude'] ?? null,
+
+            'longitude' =>
+                $validated['longitude'] ?? null,
+
+            'preferred_date' =>
+                $validated['preferred_date'],
+
+            'preferred_time' =>
+                $validated['preferred_time'],
+
+            'instructions' =>
+                $validated['instructions'] ?? null,
+
+            'status' =>
+                'pending',
+
+            'assigned_at' =>
+                null,
+
+            'on_the_way_at' =>
+                null,
+
+            'arrived_at' =>
+                null,
+
+            'collected_at' =>
+                null,
+        ]);
+
+        return redirect()
+            ->route('sample-requests.patient.index')
+            ->with(
+                'success',
+                'Home collection requested successfully. An administrator will assign a collector.'
+            );
     }
 
 
@@ -157,12 +440,12 @@ class SampleRequestController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Receptionist: show all requests created by them.
-     */
     public function receptionistIndex()
     {
-        if (!Auth::check() || Auth::user()->role !== 'receptionist') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'receptionist'
+        ) {
             abort(403);
         }
 
@@ -171,7 +454,10 @@ class SampleRequestController extends Controller
             'bloodSample.transportations.transporter',
             'bloodSample.transportations.laboratory',
         ])
-            ->where('requested_by', Auth::id())
+            ->where(
+                'requested_by',
+                Auth::id()
+            )
             ->latest()
             ->get();
 
@@ -182,16 +468,19 @@ class SampleRequestController extends Controller
     }
 
 
-    /**
-     * Receptionist: show form to create request for patient.
-     */
     public function receptionistCreate()
     {
-        if (!Auth::check() || Auth::user()->role !== 'receptionist') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'receptionist'
+        ) {
             abort(403);
         }
 
-        $patients = User::where('role', 'patient')
+        $patients = User::where(
+            'role',
+            'patient'
+        )
             ->orderBy('name')
             ->get();
 
@@ -202,69 +491,111 @@ class SampleRequestController extends Controller
     }
 
 
-    /**
-     * Receptionist: create request for selected patient.
-     */
     public function receptionistStore(
         Request $request
     ): RedirectResponse {
 
-        if (!Auth::check() || Auth::user()->role !== 'receptionist') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'receptionist'
+        ) {
             abort(403);
         }
 
         $validated = $request->validate([
-            'patient_id' => ['required', 'exists:users,id'],
-            'sample_type' => ['required', 'string', 'max:100'],
-            'blood_type' => ['nullable', 'string', 'max:10'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'patient_id' => [
+                'required',
+                'exists:users,id',
+            ],
+
+            'sample_type' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'blood_type' => [
+                'nullable',
+                'string',
+                'max:10',
+            ],
+
+            'notes' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
         ]);
 
-        /*
-         * Make sure selected user really is a patient.
-         */
-        $patient = User::where('id', $validated['patient_id'])
-            ->where('role', 'patient')
+        $patient = User::where(
+            'id',
+            $validated['patient_id']
+        )
+            ->where(
+                'role',
+                'patient'
+            )
             ->firstOrFail();
 
-        /*
-         * Create pending blood sample for selected patient.
-         */
         $bloodSample = BloodSample::create([
-            'sample_code' => 'BS-' . strtoupper(substr(uniqid(), -8)),
-            'patient_id' => $patient->id,
-            'sample_type' => $validated['sample_type'],
-            'blood_type' => $validated['blood_type'] ?? null,
-            'status' => 'pending',
+            'sample_code' =>
+                'BS-' . strtoupper(substr(uniqid(), -8)),
 
-            'collected_by' => null,
-            'collected_at' => null,
-            'reviewed_by' => null,
-            'reviewed_at' => null,
-            'rejection_reason' => null,
+            'patient_id' =>
+                $patient->id,
+
+            'sample_type' =>
+                $validated['sample_type'],
+
+            'blood_type' =>
+                $validated['blood_type'] ?? null,
+
+            'status' =>
+                'pending',
+
+            'collected_by' =>
+                null,
+
+            'collected_at' =>
+                null,
+
+            'reviewed_by' =>
+                null,
+
+            'reviewed_at' =>
+                null,
+
+            'rejection_reason' =>
+                null,
         ]);
 
-        /*
-         * Create request.
-         *
-         * patient_id   = who the request belongs to
-         * requested_by = receptionist who created it
-         */
         SampleRequest::create([
-            'patient_id' => $patient->id,
-            'requested_by' => Auth::id(),
-            'blood_sample_id' => $bloodSample->id,
-            'sample_type' => $validated['sample_type'],
-            'blood_type' => $validated['blood_type'] ?? null,
-            'status' => 'pending',
-            'notes' => $validated['notes'] ?? null,
+            'patient_id' =>
+                $patient->id,
+
+            'requested_by' =>
+                Auth::id(),
+
+            'blood_sample_id' =>
+                $bloodSample->id,
+
+            'sample_type' =>
+                $validated['sample_type'],
+
+            'blood_type' =>
+                $validated['blood_type'] ?? null,
+
+            'status' =>
+                'pending',
+
+            'notes' =>
+                $validated['notes'] ?? null,
         ]);
 
-        /*
-         * Go to receptionist request history.
-         */
         return redirect()
-            ->route('sample-requests.receptionist.index')
+            ->route(
+                'sample-requests.receptionist.index'
+            )
             ->with(
                 'success',
                 'Blood sample request created for the patient.'
@@ -278,12 +609,12 @@ class SampleRequestController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Admin: show all sample requests.
-     */
     public function adminIndex()
     {
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
             abort(403);
         }
 
@@ -291,6 +622,8 @@ class SampleRequestController extends Controller
             'patient',
             'requester',
             'approver',
+            'assignedDoctor.doctorProfile',
+            'homeCollection.assignedCollector',
             'bloodSample.transportations.transporter',
             'bloodSample.transportations.collectionCenter',
             'bloodSample.transportations.laboratory',
@@ -298,23 +631,37 @@ class SampleRequestController extends Controller
             ->latest()
             ->get();
 
-        $collectors = User::where('role', 'sample_collector')
-            ->orderBy('name')
-            ->get();
-
-        $collectionCenters = CollectionCenter::where(
-            'is_active',
-            true
+        $collectors = User::where(
+            'role',
+            'sample_collector'
         )
             ->orderBy('name')
             ->get();
 
-        $laboratories = Laboratory::where(
-            'is_active',
-            true
-        )
-            ->orderBy('name')
-            ->get();
+        $collectionCenters =
+            CollectionCenter::where(
+                'is_active',
+                true
+            )
+                ->orderBy('name')
+                ->get();
+
+        $laboratories =
+            Laboratory::where(
+                'is_active',
+                true
+            )
+                ->orderBy('name')
+                ->get();
+
+        $availableDoctors =
+            User::where(
+                'role',
+                'doctor'
+            )
+                ->with('doctorProfile')
+                ->orderBy('name')
+                ->get();
 
         return view(
             'sample-requests.admin_index',
@@ -322,20 +669,21 @@ class SampleRequestController extends Controller
                 'requests',
                 'collectors',
                 'collectionCenters',
-                'laboratories'
+                'laboratories',
+                'availableDoctors'
             )
         );
     }
 
 
-    /**
-     * Admin: approve request.
-     */
     public function approve(
         SampleRequest $sampleRequest
     ): RedirectResponse {
 
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
             abort(403);
         }
 
@@ -347,26 +695,31 @@ class SampleRequestController extends Controller
         }
 
         $sampleRequest->update([
-            'status' => 'approved',
-            'approved_by' => Auth::id(),
-            'approved_at' => now(),
+            'status' =>
+                'approved',
+
+            'approved_by' =>
+                Auth::id(),
+
+            'approved_at' =>
+                now(),
         ]);
 
         return back()->with(
             'success',
-            'Sample request approved successfully. You can now assign a collector.'
+            'Sample request approved successfully.'
         );
     }
 
 
-    /**
-     * Admin: decline request.
-     */
     public function decline(
         SampleRequest $sampleRequest
     ): RedirectResponse {
 
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
             abort(403);
         }
 
@@ -378,17 +731,20 @@ class SampleRequestController extends Controller
         }
 
         $sampleRequest->update([
-            'status' => 'declined',
-            'approved_by' => Auth::id(),
-            'approved_at' => now(),
+            'status' =>
+                'declined',
+
+            'approved_by' =>
+                Auth::id(),
+
+            'approved_at' =>
+                now(),
         ]);
 
-        /*
-         * A declined request never reaches transportation.
-         * Delete its pending blood sample.
-         */
         if ($sampleRequest->bloodSample) {
-            $sampleRequest->bloodSample->delete();
+            $sampleRequest
+                ->bloodSample
+                ->delete();
         }
 
         return back()->with(
@@ -398,15 +754,15 @@ class SampleRequestController extends Controller
     }
 
 
-    /**
-     * Admin: assign collector after approval.
-     */
     public function assignCollector(
         Request $request,
         SampleRequest $sampleRequest
     ): RedirectResponse {
 
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
             abort(403);
         }
 
@@ -414,6 +770,17 @@ class SampleRequestController extends Controller
             return back()->with(
                 'error',
                 'The sample request must be approved before assigning a collector.'
+            );
+        }
+
+        if (
+            $sampleRequest
+                ->homeCollection()
+                ->exists()
+        ) {
+            return back()->with(
+                'error',
+                'This request uses Home Collection. Assign its collector from the Home Collections portal.'
             );
         }
 
@@ -441,14 +808,14 @@ class SampleRequestController extends Controller
             ],
         ]);
 
-        /*
-         * Selected user must actually be collector.
-         */
         $collector = User::where(
             'id',
             $validated['transported_by']
         )
-            ->where('role', 'sample_collector')
+            ->where(
+                'role',
+                'sample_collector'
+            )
             ->first();
 
         if (!$collector) {
@@ -458,13 +825,11 @@ class SampleRequestController extends Controller
             );
         }
 
-        /*
-         * Prevent assigning same sample twice.
-         */
-        $alreadyAssigned = SampleTransportation::where(
-            'blood_sample_id',
-            $sampleRequest->blood_sample_id
-        )->exists();
+        $alreadyAssigned =
+            SampleTransportation::where(
+                'blood_sample_id',
+                $sampleRequest->blood_sample_id
+            )->exists();
 
         if ($alreadyAssigned) {
             return back()->with(
@@ -474,16 +839,203 @@ class SampleRequestController extends Controller
         }
 
         SampleTransportation::create([
-            'blood_sample_id' => $sampleRequest->blood_sample_id,
-            'collection_center_id' => $validated['collection_center_id'],
-            'laboratory_id' => $validated['laboratory_id'],
-            'transported_by' => $validated['transported_by'],
-            'status' => 'pending',
+            'blood_sample_id' =>
+                $sampleRequest->blood_sample_id,
+
+            'collection_center_id' =>
+                $validated['collection_center_id'],
+
+            'laboratory_id' =>
+                $validated['laboratory_id'],
+
+            'transported_by' =>
+                $validated['transported_by'],
+
+            'status' =>
+                'pending',
         ]);
 
         return back()->with(
             'success',
             'Collector assigned successfully.'
+        );
+    }
+
+
+    public function assignDoctor(
+        Request $request,
+        SampleRequest $sampleRequest
+    ): RedirectResponse {
+
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
+            abort(403);
+        }
+
+        if ($sampleRequest->status !== 'approved') {
+            return back()->with(
+                'error',
+                'Only approved sample requests can be assigned to a doctor.'
+            );
+        }
+
+        if (!$sampleRequest->blood_sample_id) {
+            return back()->with(
+                'error',
+                'No blood sample is connected to this request.'
+            );
+        }
+
+        $transportation =
+            SampleTransportation::where(
+                'blood_sample_id',
+                $sampleRequest->blood_sample_id
+            )
+                ->latest('id')
+                ->first();
+
+        if (!$transportation) {
+            return back()->with(
+                'error',
+                'No transportation record exists for this sample.'
+            );
+        }
+
+        if (
+            $transportation->status
+            !==
+            'delivered'
+        ) {
+            return back()->with(
+                'error',
+                'The sample must be delivered before a doctor can be assigned.'
+            );
+        }
+
+        if ($sampleRequest->assigned_doctor_id) {
+            return back()->with(
+                'error',
+                'A doctor has already been assigned to this request.'
+            );
+        }
+
+        $validated = $request->validate([
+            'assigned_doctor_id' => [
+                'required',
+                'exists:users,id',
+            ],
+        ]);
+
+        $doctor = User::where(
+            'id',
+            $validated['assigned_doctor_id']
+        )
+            ->where(
+                'role',
+                'doctor'
+            )
+            ->first();
+
+        if (!$doctor) {
+            return back()->with(
+                'error',
+                'The selected user is not a doctor.'
+            );
+        }
+
+        $sampleRequest->update([
+            'assigned_doctor_id' =>
+                $doctor->id,
+        ]);
+
+        return back()->with(
+            'success',
+            'Doctor assigned successfully.'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DOCTOR
+    |--------------------------------------------------------------------------
+    */
+
+    public function doctorIndex()
+    {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'doctor'
+        ) {
+            abort(403);
+        }
+
+        $requests = SampleRequest::with([
+            'patient',
+            'requester',
+            'approver',
+            'bloodSample',
+            'bloodSample.transportations.transporter',
+            'bloodSample.transportations.collectionCenter',
+            'bloodSample.transportations.laboratory',
+        ])
+            ->where(
+                'assigned_doctor_id',
+                Auth::id()
+            )
+            ->latest()
+            ->get();
+
+        return view(
+            'sample-requests.doctor_index',
+            compact('requests')
+        );
+    }
+
+
+    public function doctorShow(
+        SampleRequest $sampleRequest
+    ) {
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'doctor'
+        ) {
+            abort(403);
+        }
+
+        if (
+            (int) $sampleRequest->assigned_doctor_id
+            !==
+            (int) Auth::id()
+        ) {
+            abort(403);
+        }
+
+        $sampleRequest->load([
+            'patient',
+            'requester',
+            'approver',
+            'assignedDoctor.doctorProfile',
+            'bloodSample',
+            'bloodSample.transportations.transporter',
+            'bloodSample.transportations.collectionCenter',
+            'bloodSample.transportations.laboratory',
+        ]);
+
+        $transportation = $sampleRequest
+            ->bloodSample
+            ?->transportations
+            ?->sortByDesc('id')
+            ?->first();
+
+        return view(
+            'sample-requests.doctor_show',
+            compact(
+                'sampleRequest',
+                'transportation'
+            )
         );
     }
 }

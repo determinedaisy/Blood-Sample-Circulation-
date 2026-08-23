@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\DonorRequestController;
 use App\Http\Controllers\EmergencySOSController;
+use App\Http\Controllers\HomeCollectionController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
@@ -41,7 +42,9 @@ Route::get('/dashboard', function () {
 
     return view('dashboard');
 
-})->middleware(['auth', 'verified'])->name('dashboard');
+})
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 
 /*
@@ -51,6 +54,7 @@ Route::get('/dashboard', function () {
 */
 
 Route::middleware('auth')->group(function () {
+
 
     /*
     |--------------------------------------------------------------------------
@@ -75,24 +79,47 @@ Route::middleware('auth')->group(function () {
         [SampleRequestController::class, 'patientIndex']
     )->name('sample-requests.patient.index');
 
+
     Route::get(
         '/sample-requests/create',
         [SampleRequestController::class, 'create']
     )->name('sample-requests.create');
+
 
     Route::post(
         '/sample-requests',
         [SampleRequestController::class, 'store']
     )->name('sample-requests.store');
 
+
     /*
-    | IMPORTANT:
-    | This is your sample tracking feature.
+    |--------------------------------------------------------------------------
+    | Sample Tracking
+    |--------------------------------------------------------------------------
     */
+
     Route::get(
         '/sample-requests/{sampleRequest}/tracking',
         [SampleRequestController::class, 'tracking']
     )->name('sample-requests.tracking');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Home Collection - Patient
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/sample-requests/{sampleRequest}/home-collection',
+        [SampleRequestController::class, 'homeCollectionCreate']
+    )->name('sample-requests.home-collection.create');
+
+
+    Route::post(
+        '/sample-requests/{sampleRequest}/home-collection',
+        [SampleRequestController::class, 'homeCollectionStore']
+    )->name('sample-requests.home-collection.store');
 
 
     /*
@@ -106,10 +133,12 @@ Route::middleware('auth')->group(function () {
         [SampleRequestController::class, 'receptionistIndex']
     )->name('sample-requests.receptionist.index');
 
+
     Route::get(
         '/receptionist/sample-requests/create',
         [SampleRequestController::class, 'receptionistCreate']
     )->name('sample-requests.receptionist.create');
+
 
     Route::post(
         '/receptionist/sample-requests',
@@ -128,15 +157,18 @@ Route::middleware('auth')->group(function () {
         [SampleRequestController::class, 'adminIndex']
     )->name('sample-requests.admin.index');
 
+
     Route::patch(
         '/admin/sample-requests/{sampleRequest}/approve',
         [SampleRequestController::class, 'approve']
     )->name('sample-requests.approve');
 
+
     Route::patch(
         '/admin/sample-requests/{sampleRequest}/decline',
         [SampleRequestController::class, 'decline']
     )->name('sample-requests.decline');
+
 
     Route::post(
         '/admin/sample-requests/{sampleRequest}/assign-collector',
@@ -144,11 +176,81 @@ Route::middleware('auth')->group(function () {
     )->name('sample-requests.assign-collector');
 
 
+    Route::post(
+        '/admin/sample-requests/{sampleRequest}/assign-doctor',
+        [SampleRequestController::class, 'assignDoctor']
+    )->name('sample-requests.assign-doctor');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Home Collection - Admin
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/admin/home-collections',
+        [HomeCollectionController::class, 'adminIndex']
+    )->name('home-collections.admin.index');
+
+
+    Route::post(
+        '/admin/home-collections/{homeCollection}/assign',
+        [HomeCollectionController::class, 'assignCollector']
+    )->name('home-collections.assign');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Home Collection - Sample Collector
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/collector/home-collections',
+        [HomeCollectionController::class, 'collectorIndex']
+    )->name('home-collections.collector.index');
+
+
+    Route::patch(
+        '/collector/home-collections/{homeCollection}/start',
+        [HomeCollectionController::class, 'startTrip']
+    )->name('home-collections.collector.start');
+
+
+    Route::patch(
+        '/collector/home-collections/{homeCollection}/arrive',
+        [HomeCollectionController::class, 'markArrived']
+    )->name('home-collections.collector.arrive');
+
+
+    Route::patch(
+        '/collector/home-collections/{homeCollection}/collect',
+        [HomeCollectionController::class, 'markCollected']
+    )->name('home-collections.collector.collect');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Doctor Sample Requests
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/doctor/sample-requests',
+        [SampleRequestController::class, 'doctorIndex']
+    )->name('sample-requests.doctor.index');
+
+
+    Route::get(
+        '/doctor/sample-requests/{sampleRequest}',
+        [SampleRequestController::class, 'doctorShow']
+    )->name('sample-requests.doctor.show');
+
+
     /*
     |--------------------------------------------------------------------------
     | Reception Assistance
-    |--------------------------------------------------------------------------
-    | Patient contacts receptionist.
     |--------------------------------------------------------------------------
     */
 
@@ -157,10 +259,12 @@ Route::middleware('auth')->group(function () {
         [ReceptionRequestController::class, 'patientIndex']
     )->name('reception-requests.patient.index');
 
+
     Route::get(
         '/reception-requests/create',
         [ReceptionRequestController::class, 'create']
     )->name('reception-requests.create');
+
 
     Route::post(
         '/reception-requests',
@@ -179,6 +283,7 @@ Route::middleware('auth')->group(function () {
         [ReceptionRequestController::class, 'receptionistIndex']
     )->name('reception-requests.receptionist.index');
 
+
     Route::patch(
         '/receptionist/reception-requests/{receptionRequest}/process',
         [ReceptionRequestController::class, 'process']
@@ -195,6 +300,7 @@ Route::middleware('auth')->group(function () {
         '/blood-samples',
         [BloodSampleReviewController::class, 'index']
     )->name('blood-samples.index');
+
 
     Route::patch(
         '/blood-samples/{bloodSample}/review',
@@ -213,15 +319,18 @@ Route::middleware('auth')->group(function () {
         [InventoryController::class, 'index']
     )->name('inventory.index');
 
+
     Route::get(
         '/inventory/create',
         [InventoryController::class, 'create']
     )->name('inventory.create');
 
+
     Route::post(
         '/inventory',
         [InventoryController::class, 'store']
     )->name('inventory.store');
+
 
     Route::patch(
         '/inventory/{bloodSample}/collect',
@@ -240,10 +349,12 @@ Route::middleware('auth')->group(function () {
         [PatientBloodSampleController::class, 'index']
     )->name('patient.blood-samples.index');
 
+
     Route::get(
         '/my-blood-samples/donate',
         [PatientBloodSampleController::class, 'create']
     )->name('patient.blood-samples.create');
+
 
     Route::post(
         '/my-blood-samples/donate',
@@ -262,10 +373,12 @@ Route::middleware('auth')->group(function () {
         [EmergencySOSController::class, 'index']
     )->name('sos.index');
 
+
     Route::post(
         '/sos',
         [EmergencySOSController::class, 'store']
     )->name('sos.store');
+
 
     Route::get(
         '/sos/results',
@@ -296,15 +409,18 @@ Route::middleware('auth')->group(function () {
         [SampleTransportationController::class, 'index']
     )->name('transportation.index');
 
+
     Route::post(
         '/transportation',
         [SampleTransportationController::class, 'store']
     )->name('transportation.store');
 
+
     Route::patch(
         '/transportation/{transportation}/start',
         [SampleTransportationController::class, 'start']
     )->name('transportation.start');
+
 
     Route::patch(
         '/transportation/{transportation}/deliver',
@@ -323,10 +439,12 @@ Route::middleware('auth')->group(function () {
         [ProfileController::class, 'edit']
     )->name('profile.edit');
 
+
     Route::patch(
         '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
+
 
     Route::delete(
         '/profile',
@@ -339,8 +457,6 @@ Route::middleware('auth')->group(function () {
 /*
 |--------------------------------------------------------------------------
 | Sample History
-|--------------------------------------------------------------------------
-| Added by latest main.
 |--------------------------------------------------------------------------
 */
 

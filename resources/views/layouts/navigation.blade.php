@@ -1,4 +1,5 @@
 <!-- Primary Navigation Menu -->
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
     <div class="flex justify-between h-16">
@@ -19,19 +20,25 @@
             </div>
 
 
-            <!-- Desktop Navigation Links -->
+
+            <!-- Desktop Navigation -->
             <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+
 
                 <!-- Dashboard -->
                 <x-nav-link
                     :href="auth()->user()->role === 'admin'
                         ? route('admin.dashboard')
                         : route('dashboard')"
-                    :active="request()->routeIs('admin.dashboard')
-                        || request()->routeIs('dashboard')"
+                    :active="
+                        request()->routeIs('admin.dashboard')
+                        ||
+                        request()->routeIs('dashboard')
+                    "
                 >
                     {{ __('Dashboard') }}
                 </x-nav-link>
+
 
 
                 {{-- ===================================================== --}}
@@ -40,28 +47,35 @@
 
                 @if(auth()->user()->role === 'patient')
 
-                    <!-- Sample Requests -->
+
                     <x-nav-link
                         :href="route('sample-requests.patient.index')"
-                        :active="request()->routeIs('sample-requests.patient.*')
-                            || request()->routeIs('sample-requests.create')
-                            || request()->routeIs('sample-requests.tracking')"
+                        :active="
+                            request()->routeIs('sample-requests.patient.*')
+                            ||
+                            request()->routeIs('sample-requests.create')
+                            ||
+                            request()->routeIs('sample-requests.tracking')
+                            ||
+                            request()->routeIs('sample-requests.home-collection.*')
+                        "
                     >
                         {{ __('Sample Requests') }}
                     </x-nav-link>
 
 
-                    <!-- Reception Assistance -->
                     <x-nav-link
                         :href="route('reception-requests.patient.index')"
-                        :active="request()->routeIs('reception-requests.patient.*')
-                            || request()->routeIs('reception-requests.create')"
+                        :active="
+                            request()->routeIs('reception-requests.patient.*')
+                            ||
+                            request()->routeIs('reception-requests.create')
+                        "
                     >
                         {{ __('Reception Assistance') }}
                     </x-nav-link>
 
 
-                    <!-- My Samples -->
                     <x-nav-link
                         :href="route('patient.blood-samples.index')"
                         :active="request()->routeIs('patient.blood-samples.*')"
@@ -69,7 +83,9 @@
                         {{ __('My Samples') }}
                     </x-nav-link>
 
+
                 @endif
+
 
 
                 {{-- ===================================================== --}}
@@ -78,7 +94,7 @@
 
                 @if(auth()->user()->role === 'receptionist')
 
-                    <!-- Sample Requests -->
+
                     <x-nav-link
                         :href="route('sample-requests.receptionist.index')"
                         :active="request()->routeIs('sample-requests.receptionist.*')"
@@ -87,16 +103,20 @@
                     </x-nav-link>
 
 
-                    <!-- Incoming Requests -->
                     <x-nav-link
                         :href="route('reception-requests.receptionist.index')"
-                        :active="request()->routeIs('reception-requests.receptionist.*')
-                            || request()->routeIs('reception-requests.process')"
+                        :active="
+                            request()->routeIs('reception-requests.receptionist.*')
+                            ||
+                            request()->routeIs('reception-requests.process')
+                        "
                     >
                         {{ __('Incoming Requests') }}
                     </x-nav-link>
 
+
                 @endif
+
 
 
                 {{-- ===================================================== --}}
@@ -105,19 +125,37 @@
 
                 @if(auth()->user()->role === 'admin')
 
-                    <!-- Sample Requests -->
+
                     <x-nav-link
                         :href="route('sample-requests.admin.index')"
-                        :active="request()->routeIs('sample-requests.admin.*')
-                            || request()->routeIs('sample-requests.approve')
-                            || request()->routeIs('sample-requests.decline')
-                            || request()->routeIs('sample-requests.assign-collector')"
+                        :active="
+                            request()->routeIs('sample-requests.admin.*')
+                            ||
+                            request()->routeIs('sample-requests.approve')
+                            ||
+                            request()->routeIs('sample-requests.decline')
+                            ||
+                            request()->routeIs('sample-requests.assign-collector')
+                            ||
+                            request()->routeIs('sample-requests.assign-doctor')
+                        "
                     >
                         {{ __('Sample Requests') }}
                     </x-nav-link>
 
 
-                    <!-- Blood Samples -->
+                    <x-nav-link
+                        :href="route('home-collections.admin.index')"
+                        :active="
+                            request()->routeIs('home-collections.admin.*')
+                            ||
+                            request()->routeIs('home-collections.assign')
+                        "
+                    >
+                        🏠 {{ __('Home Collections') }}
+                    </x-nav-link>
+
+
                     <x-nav-link
                         :href="route('blood-samples.index')"
                         :active="request()->routeIs('blood-samples.*')"
@@ -126,7 +164,6 @@
                     </x-nav-link>
 
 
-                    <!-- Inventory -->
                     <x-nav-link
                         :href="route('inventory.index')"
                         :active="request()->routeIs('inventory.*')"
@@ -135,7 +172,6 @@
                     </x-nav-link>
 
 
-                    <!-- Transportation -->
                     <x-nav-link
                         :href="route('transportation.index')"
                         :active="request()->routeIs('transportation.*')"
@@ -143,7 +179,9 @@
                         {{ __('Transportation') }}
                     </x-nav-link>
 
+
                 @endif
+
 
 
                 {{-- ===================================================== --}}
@@ -152,7 +190,7 @@
 
                 @if(auth()->user()->role === 'lab_staff')
 
-                    <!-- Blood Samples -->
+
                     <x-nav-link
                         :href="route('blood-samples.index')"
                         :active="request()->routeIs('blood-samples.*')"
@@ -161,7 +199,6 @@
                     </x-nav-link>
 
 
-                    <!-- Inventory -->
                     <x-nav-link
                         :href="route('inventory.index')"
                         :active="request()->routeIs('inventory.*')"
@@ -170,7 +207,6 @@
                     </x-nav-link>
 
 
-                    <!-- Transportation -->
                     <x-nav-link
                         :href="route('transportation.index')"
                         :active="request()->routeIs('transportation.*')"
@@ -178,7 +214,9 @@
                         {{ __('Transportation') }}
                     </x-nav-link>
 
+
                 @endif
+
 
 
                 {{-- ===================================================== --}}
@@ -187,7 +225,15 @@
 
                 @if(auth()->user()->role === 'sample_collector')
 
-                    <!-- Transportation -->
+
+                    <x-nav-link
+                        :href="route('home-collections.collector.index')"
+                        :active="request()->routeIs('home-collections.collector.*')"
+                    >
+                        🏠 {{ __('Home Collections') }}
+                    </x-nav-link>
+
+
                     <x-nav-link
                         :href="route('transportation.index')"
                         :active="request()->routeIs('transportation.*')"
@@ -196,7 +242,6 @@
                     </x-nav-link>
 
 
-                    <!-- Inventory -->
                     <x-nav-link
                         :href="route('inventory.index')"
                         :active="request()->routeIs('inventory.*')"
@@ -204,7 +249,9 @@
                         {{ __('Inventory') }}
                     </x-nav-link>
 
+
                 @endif
+
 
 
                 {{-- ===================================================== --}}
@@ -213,7 +260,15 @@
 
                 @if(auth()->user()->role === 'doctor')
 
-                    <!-- Blood Samples -->
+
+                    <x-nav-link
+                        :href="route('sample-requests.doctor.index')"
+                        :active="request()->routeIs('sample-requests.doctor.*')"
+                    >
+                        {{ __('Assigned Samples') }}
+                    </x-nav-link>
+
+
                     <x-nav-link
                         :href="route('blood-samples.index')"
                         :active="request()->routeIs('blood-samples.*')"
@@ -221,7 +276,9 @@
                         {{ __('Blood Samples') }}
                     </x-nav-link>
 
+
                 @endif
+
 
 
                 <!-- Emergency SOS -->
@@ -237,10 +294,14 @@
         </div>
 
 
+
         <!-- Settings Dropdown -->
         <div class="hidden sm:flex sm:items-center sm:ms-6">
 
-            <x-dropdown align="right" width="48">
+            <x-dropdown
+                align="right"
+                width="48"
+            >
 
                 <x-slot name="trigger">
 
@@ -251,7 +312,8 @@
                                rounded-md
                                text-gray-500 dark:text-gray-400
                                bg-white dark:bg-gray-800
-                               hover:text-gray-700 dark:hover:text-gray-300
+                               hover:text-gray-700
+                               dark:hover:text-gray-300
                                focus:outline-none
                                transition ease-in-out duration-150"
                     >
@@ -259,6 +321,7 @@
                         <div>
                             {{ Auth::user()->name }}
                         </div>
+
 
                         <div class="ms-1">
 
@@ -289,12 +352,18 @@
 
                 <x-slot name="content">
 
-                    <x-dropdown-link :href="route('profile.edit')">
+
+                    <x-dropdown-link
+                        :href="route('profile.edit')"
+                    >
                         {{ __('Profile') }}
                     </x-dropdown-link>
 
 
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form
+                        method="POST"
+                        action="{{ route('logout') }}"
+                    >
 
                         @csrf
 
@@ -310,11 +379,13 @@
 
                     </form>
 
+
                 </x-slot>
 
             </x-dropdown>
 
         </div>
+
 
 
         <!-- Hamburger -->
@@ -325,7 +396,8 @@
                 class="inline-flex items-center justify-center
                        p-2 rounded-md
                        text-gray-400 dark:text-gray-500
-                       hover:text-gray-500 dark:hover:text-gray-400"
+                       hover:text-gray-500
+                       dark:hover:text-gray-400"
             >
 
                 <svg
@@ -343,6 +415,7 @@
                         stroke-width="2"
                         d="M4 6h16M4 12h16M4 18h16"
                     />
+
 
                     <path
                         :class="{'hidden': ! open, 'inline-flex': open}"
@@ -373,46 +446,54 @@
 
     <div class="pt-2 pb-3 space-y-1">
 
-        <!-- Dashboard -->
+
         <x-responsive-nav-link
             :href="auth()->user()->role === 'admin'
                 ? route('admin.dashboard')
                 : route('dashboard')"
-            :active="request()->routeIs('admin.dashboard')
-                || request()->routeIs('dashboard')"
+            :active="
+                request()->routeIs('admin.dashboard')
+                ||
+                request()->routeIs('dashboard')
+            "
         >
             {{ __('Dashboard') }}
         </x-responsive-nav-link>
 
 
-        {{-- ===================================================== --}}
-        {{-- PATIENT --}}
-        {{-- ===================================================== --}}
 
+        {{-- PATIENT --}}
         @if(auth()->user()->role === 'patient')
 
-            <!-- Sample Requests -->
+
             <x-responsive-nav-link
                 :href="route('sample-requests.patient.index')"
-                :active="request()->routeIs('sample-requests.patient.*')
-                    || request()->routeIs('sample-requests.create')
-                    || request()->routeIs('sample-requests.tracking')"
+                :active="
+                    request()->routeIs('sample-requests.patient.*')
+                    ||
+                    request()->routeIs('sample-requests.create')
+                    ||
+                    request()->routeIs('sample-requests.tracking')
+                    ||
+                    request()->routeIs('sample-requests.home-collection.*')
+                "
             >
                 {{ __('Sample Requests') }}
             </x-responsive-nav-link>
 
 
-            <!-- Reception Assistance -->
             <x-responsive-nav-link
                 :href="route('reception-requests.patient.index')"
-                :active="request()->routeIs('reception-requests.patient.*')
-                    || request()->routeIs('reception-requests.create')"
+                :active="
+                    request()->routeIs('reception-requests.patient.*')
+                    ||
+                    request()->routeIs('reception-requests.create')
+                "
             >
                 {{ __('Reception Assistance') }}
             </x-responsive-nav-link>
 
 
-            <!-- My Samples -->
             <x-responsive-nav-link
                 :href="route('patient.blood-samples.index')"
                 :active="request()->routeIs('patient.blood-samples.*')"
@@ -420,16 +501,15 @@
                 {{ __('My Samples') }}
             </x-responsive-nav-link>
 
+
         @endif
 
 
-        {{-- ===================================================== --}}
-        {{-- RECEPTIONIST --}}
-        {{-- ===================================================== --}}
 
+        {{-- RECEPTIONIST --}}
         @if(auth()->user()->role === 'receptionist')
 
-            <!-- Sample Requests -->
+
             <x-responsive-nav-link
                 :href="route('sample-requests.receptionist.index')"
                 :active="request()->routeIs('sample-requests.receptionist.*')"
@@ -438,37 +518,56 @@
             </x-responsive-nav-link>
 
 
-            <!-- Incoming Requests -->
             <x-responsive-nav-link
                 :href="route('reception-requests.receptionist.index')"
-                :active="request()->routeIs('reception-requests.receptionist.*')
-                    || request()->routeIs('reception-requests.process')"
+                :active="
+                    request()->routeIs('reception-requests.receptionist.*')
+                    ||
+                    request()->routeIs('reception-requests.process')
+                "
             >
                 {{ __('Incoming Requests') }}
             </x-responsive-nav-link>
 
+
         @endif
 
 
-        {{-- ===================================================== --}}
-        {{-- ADMIN --}}
-        {{-- ===================================================== --}}
 
+        {{-- ADMIN --}}
         @if(auth()->user()->role === 'admin')
 
-            <!-- Sample Requests -->
+
             <x-responsive-nav-link
                 :href="route('sample-requests.admin.index')"
-                :active="request()->routeIs('sample-requests.admin.*')
-                    || request()->routeIs('sample-requests.approve')
-                    || request()->routeIs('sample-requests.decline')
-                    || request()->routeIs('sample-requests.assign-collector')"
+                :active="
+                    request()->routeIs('sample-requests.admin.*')
+                    ||
+                    request()->routeIs('sample-requests.approve')
+                    ||
+                    request()->routeIs('sample-requests.decline')
+                    ||
+                    request()->routeIs('sample-requests.assign-collector')
+                    ||
+                    request()->routeIs('sample-requests.assign-doctor')
+                "
             >
                 {{ __('Sample Requests') }}
             </x-responsive-nav-link>
 
 
-            <!-- Blood Samples -->
+            <x-responsive-nav-link
+                :href="route('home-collections.admin.index')"
+                :active="
+                    request()->routeIs('home-collections.admin.*')
+                    ||
+                    request()->routeIs('home-collections.assign')
+                "
+            >
+                🏠 {{ __('Home Collections') }}
+            </x-responsive-nav-link>
+
+
             <x-responsive-nav-link
                 :href="route('blood-samples.index')"
                 :active="request()->routeIs('blood-samples.*')"
@@ -477,7 +576,6 @@
             </x-responsive-nav-link>
 
 
-            <!-- Inventory -->
             <x-responsive-nav-link
                 :href="route('inventory.index')"
                 :active="request()->routeIs('inventory.*')"
@@ -486,7 +584,6 @@
             </x-responsive-nav-link>
 
 
-            <!-- Transportation -->
             <x-responsive-nav-link
                 :href="route('transportation.index')"
                 :active="request()->routeIs('transportation.*')"
@@ -494,16 +591,15 @@
                 {{ __('Transportation') }}
             </x-responsive-nav-link>
 
+
         @endif
 
 
-        {{-- ===================================================== --}}
-        {{-- LAB STAFF --}}
-        {{-- ===================================================== --}}
 
+        {{-- LAB STAFF --}}
         @if(auth()->user()->role === 'lab_staff')
 
-            <!-- Blood Samples -->
+
             <x-responsive-nav-link
                 :href="route('blood-samples.index')"
                 :active="request()->routeIs('blood-samples.*')"
@@ -512,7 +608,6 @@
             </x-responsive-nav-link>
 
 
-            <!-- Inventory -->
             <x-responsive-nav-link
                 :href="route('inventory.index')"
                 :active="request()->routeIs('inventory.*')"
@@ -521,7 +616,6 @@
             </x-responsive-nav-link>
 
 
-            <!-- Transportation -->
             <x-responsive-nav-link
                 :href="route('transportation.index')"
                 :active="request()->routeIs('transportation.*')"
@@ -529,16 +623,23 @@
                 {{ __('Transportation') }}
             </x-responsive-nav-link>
 
+
         @endif
 
 
-        {{-- ===================================================== --}}
-        {{-- SAMPLE COLLECTOR --}}
-        {{-- ===================================================== --}}
 
+        {{-- SAMPLE COLLECTOR --}}
         @if(auth()->user()->role === 'sample_collector')
 
-            <!-- Transportation -->
+
+            <x-responsive-nav-link
+                :href="route('home-collections.collector.index')"
+                :active="request()->routeIs('home-collections.collector.*')"
+            >
+                🏠 {{ __('Home Collections') }}
+            </x-responsive-nav-link>
+
+
             <x-responsive-nav-link
                 :href="route('transportation.index')"
                 :active="request()->routeIs('transportation.*')"
@@ -547,7 +648,6 @@
             </x-responsive-nav-link>
 
 
-            <!-- Inventory -->
             <x-responsive-nav-link
                 :href="route('inventory.index')"
                 :active="request()->routeIs('inventory.*')"
@@ -555,16 +655,23 @@
                 {{ __('Inventory') }}
             </x-responsive-nav-link>
 
+
         @endif
 
 
-        {{-- ===================================================== --}}
-        {{-- DOCTOR --}}
-        {{-- ===================================================== --}}
 
+        {{-- DOCTOR --}}
         @if(auth()->user()->role === 'doctor')
 
-            <!-- Blood Samples -->
+
+            <x-responsive-nav-link
+                :href="route('sample-requests.doctor.index')"
+                :active="request()->routeIs('sample-requests.doctor.*')"
+            >
+                {{ __('Assigned Samples') }}
+            </x-responsive-nav-link>
+
+
             <x-responsive-nav-link
                 :href="route('blood-samples.index')"
                 :active="request()->routeIs('blood-samples.*')"
@@ -572,10 +679,11 @@
                 {{ __('Blood Samples') }}
             </x-responsive-nav-link>
 
+
         @endif
 
 
-        <!-- Emergency SOS -->
+
         <x-responsive-nav-link
             :href="route('sos.index')"
             :active="request()->routeIs('sos.*')"
@@ -586,16 +694,28 @@
     </div>
 
 
-    <!-- Responsive Settings Options -->
-    <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
+
+    <!-- Responsive Settings -->
+    <div
+        class="pt-4 pb-1
+               border-t border-gray-200
+               dark:border-gray-600"
+    >
 
         <div class="px-4">
 
-            <div class="font-medium text-base text-gray-800 dark:text-gray-200">
+            <div
+                class="font-medium text-base
+                       text-gray-800
+                       dark:text-gray-200"
+            >
                 {{ Auth::user()->name }}
             </div>
 
-            <div class="font-medium text-sm text-gray-500">
+            <div
+                class="font-medium text-sm
+                       text-gray-500"
+            >
                 {{ Auth::user()->email }}
             </div>
 
@@ -604,14 +724,21 @@
 
         <div class="mt-3 space-y-1">
 
-            <x-responsive-nav-link :href="route('profile.edit')">
+
+            <x-responsive-nav-link
+                :href="route('profile.edit')"
+            >
                 {{ __('Profile') }}
             </x-responsive-nav-link>
 
 
-            <form method="POST" action="{{ route('logout') }}">
+            <form
+                method="POST"
+                action="{{ route('logout') }}"
+            >
 
                 @csrf
+
 
                 <x-responsive-nav-link
                     :href="route('logout')"
@@ -622,6 +749,7 @@
                 >
                     {{ __('Log Out') }}
                 </x-responsive-nav-link>
+
 
             </form>
 
