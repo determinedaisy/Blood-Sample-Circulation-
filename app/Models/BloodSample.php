@@ -20,6 +20,7 @@ class BloodSample extends Model
         'rejection_reason',
         'reviewed_by',
         'reviewed_at',
+        'blood_type',
     ];
 
     protected function casts(): array
@@ -38,6 +39,49 @@ class BloodSample extends Model
     public function transportations()
 {
     return $this->hasMany(SampleTransportation::class);
+}
+public function overallStatus(): string
+{
+    // Final lab result always wins.
+    if ($this->status === 'accepted') {
+        return 'accepted';
+    }
+
+    if ($this->status === 'rejected') {
+        return 'rejected';
+    }
+
+    // Look at connected sample request.
+    $request = $this->sampleRequest;
+
+    if ($request && $request->status === 'declined') {
+        return 'declined';
+    }
+
+    // Look at connected transportation.
+    $transportation = $this->transportations()
+        ->latest()
+        ->first();
+
+    if ($transportation) {
+        if ($transportation->status === 'delivered') {
+            return 'delivered';
+        }
+
+        if ($transportation->status === 'in_transit') {
+            return 'in_transit';
+        }
+
+        if ($transportation->status === 'pending') {
+            return 'collector_assigned';
+        }
+    }
+
+    if ($request && $request->status === 'approved') {
+        return 'approved';
+    }
+
+    return 'pending';
 }
     public function collector()
     {

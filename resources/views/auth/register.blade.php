@@ -24,6 +24,7 @@
         <option value="doctor">Doctor</option>
         <option value="lab_staff">Lab Staff</option>
         <option value="sample_collector">Sample Collector</option>
+        <option value="receptionist">Receptionist</option>
     </select>
 </div>
       
