@@ -21,13 +21,17 @@ class PatientBloodSampleController extends Controller
             abort(403);
         }
 
-        $bloodSamples = BloodSample::with([
-            'collector',
-            'reviewer',
-        ])
-            ->where('patient_id', auth()->id())
-            ->latest()
-            ->get();
+    $bloodSamples = BloodSample::with([
+    'collector',
+    'reviewer',
+    'sampleRequest',
+    'transportations.transporter',
+    'transportations.collectionCenter',
+    'transportations.laboratory',
+])
+    ->where('patient_id', auth()->id())
+    ->latest()
+    ->get();
 
         return view(
             'patient.blood-samples.index',

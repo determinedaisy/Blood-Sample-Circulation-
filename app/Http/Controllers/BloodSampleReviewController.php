@@ -2,49 +2,43 @@
 
 namespace App\Http\Controllers;
 
-use App\Notifications\BloodSampleRejectedNotification;
 use App\Http\Requests\ReviewBloodSampleRequest;
 use App\Models\BloodSample;
+use App\Notifications\BloodSampleRejectedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
 class BloodSampleReviewController extends Controller
 {
     /**
-     * Accept or reject a blood sample.
+     * Show blood samples for review.
      */
-
     public function index()
-{
-    if (
-        ! auth()->check()
-        || ! in_array(
-            auth()->user()->role,
-            ['lab_staff', 'admin'],
-            true
-        )
-    ) {
-        abort(403);
+    {
+        $bloodSamples = BloodSample::with([
+            'patient',
+            'collector',
+            'reviewer',
+            'transportations.transporter',
+            'transportations.collectionCenter',
+            'transportations.laboratory',
+        ])->get();
+
+        return view(
+            'blood-samples.index',
+            compact('bloodSamples')
+        );
     }
 
-    $bloodSamples = BloodSample::with([
-        'patient',
-        'collector',
-        'reviewer'
-    ])
-    ->latest()
-    ->get();
 
-    return view(
-        'blood-samples.index',
-        compact('bloodSamples')
-    );
-}
+    /**
+     * Accept or reject a blood sample.
+     */
     public function update(
         ReviewBloodSampleRequest $request,
         BloodSample $bloodSample
     ): RedirectResponse {
-        
+
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $bloodSample) {
@@ -66,21 +60,36 @@ class BloodSampleReviewController extends Controller
             ]);
         });
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Rejected
+        |--------------------------------------------------------------------------
+        */
+
         if ($data['decision'] === 'rejected') {
 
-    $bloodSample->load('patient');
+            $bloodSample->load('patient');
 
-    if ($bloodSample->patient) {
-        $bloodSample->patient->notify(
-            new BloodSampleRejectedNotification($bloodSample)
-        );
-    }
+            if ($bloodSample->patient) {
 
-    return back()->with(
-        'warning',
-        'Blood sample rejected successfully. The patient has been notified.'
-    );
-}
+                $bloodSample->patient->notify(
+                    new BloodSampleRejectedNotification($bloodSample)
+                );
+            }
+
+            return back()->with(
+                'warning',
+                'Blood sample rejected successfully. The patient has been notified.'
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Accepted
+        |--------------------------------------------------------------------------
+        */
 
         return back()->with(
             'success',

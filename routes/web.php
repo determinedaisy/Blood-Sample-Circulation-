@@ -1,14 +1,19 @@
 <?php
 
+
+use App\Http\Controllers\ReceptionRequestController;
 use App\Http\Controllers\AdminDashboardController;
-use App\Http\Controllers\SampleTransportationController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SampleRequestController;
+use App\Http\Controllers\SampleTransportationController;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+
 /*
 |--------------------------------------------------------------------------
 | Welcome
@@ -27,8 +32,8 @@ Route::get('/', function () {
 */
 
 Route::get('/dashboard', function () {
-if (Auth::user()->role === 'admin') {
-    
+
+    if (Auth::user()->role === 'admin') {
         return redirect()->route('admin.dashboard');
     }
 
@@ -51,6 +56,88 @@ Route::get(
 
 /*
 |--------------------------------------------------------------------------
+| FEATURE 2: Sample Requests
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Patient Sample Requests
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/sample-requests',
+        [SampleRequestController::class, 'patientIndex']
+    )->name('sample-requests.patient.index');
+
+    Route::get(
+        '/sample-requests/create',
+        [SampleRequestController::class, 'create']
+    )->name('sample-requests.create');
+
+    Route::post(
+        '/sample-requests',
+        [SampleRequestController::class, 'store']
+    )->name('sample-requests.store');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Receptionist Sample Requests
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/receptionist/sample-requests/create',
+        [SampleRequestController::class, 'receptionistCreate']
+    )->name('sample-requests.receptionist.create');
+Route::get(
+    '/receptionist/sample-requests',
+    [SampleRequestController::class, 'receptionistIndex']
+)->name('sample-requests.receptionist.index');
+    Route::post(
+        '/receptionist/sample-requests',
+        [SampleRequestController::class, 'receptionistStore']
+    )->name('sample-requests.receptionist.store');
+    Route::get(
+    '/sample-requests/{sampleRequest}/tracking',
+    [SampleRequestController::class, 'tracking']
+)->name('sample-requests.tracking');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Sample Requests
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/admin/sample-requests',
+        [SampleRequestController::class, 'adminIndex']
+    )->name('sample-requests.admin.index');
+
+    Route::patch(
+        '/admin/sample-requests/{sampleRequest}/approve',
+        [SampleRequestController::class, 'approve']
+    )->name('sample-requests.approve');
+
+    Route::patch(
+        '/admin/sample-requests/{sampleRequest}/decline',
+        [SampleRequestController::class, 'decline']
+    )->name('sample-requests.decline');
+
+    Route::post(
+        '/admin/sample-requests/{sampleRequest}/assign-collector',
+        [SampleRequestController::class, 'assignCollector']
+    )->name('sample-requests.assign-collector');
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | Blood Sample Review
 |--------------------------------------------------------------------------
 */
@@ -59,7 +146,6 @@ Route::get(
     '/blood-samples',
     [BloodSampleReviewController::class, 'index']
 )->middleware('auth')->name('blood-samples.index');
-
 
 Route::patch(
     '/blood-samples/{bloodSample}/review',
@@ -73,16 +159,28 @@ Route::patch(
 |--------------------------------------------------------------------------
 */
 
-Route::get(
-    '/inventory',
-    [InventoryController::class, 'index']
-)->middleware('auth')->name('inventory.index');
+Route::middleware('auth')->group(function () {
 
+    Route::get(
+        '/inventory',
+        [InventoryController::class, 'index']
+    )->name('inventory.index');
 
-Route::patch(
-    '/inventory/{bloodSample}/collect',
-    [InventoryController::class, 'collect']
-)->middleware('auth')->name('inventory.collect');
+    Route::get(
+        '/inventory/create',
+        [InventoryController::class, 'create']
+    )->name('inventory.create');
+
+    Route::post(
+        '/inventory',
+        [InventoryController::class, 'store']
+    )->name('inventory.store');
+
+    Route::patch(
+        '/inventory/{bloodSample}/collect',
+        [InventoryController::class, 'collect']
+    )->name('inventory.collect');
+});
 
 
 /*
@@ -91,37 +189,62 @@ Route::patch(
 |--------------------------------------------------------------------------
 */
 
+Route::middleware('auth')->group(function () {
+
+    Route::get(
+        '/my-blood-samples',
+        [PatientBloodSampleController::class, 'index']
+    )->name('patient.blood-samples.index');
+
+    Route::get(
+        '/my-blood-samples/donate',
+        [PatientBloodSampleController::class, 'create']
+    )->name('patient.blood-samples.create');
+
+    Route::post(
+        '/my-blood-samples/donate',
+        [PatientBloodSampleController::class, 'store']
+    )->name('patient.blood-samples.store');
+});
+// =====================================================
+// CONTACT RECEPTIONIST
+// =====================================================
+
+// Patient
 Route::get(
-    '/my-blood-samples',
-    [PatientBloodSampleController::class, 'index']
-)->middleware('auth')->name('patient.blood-samples.index');
-
+    '/reception-requests',
+    [ReceptionRequestController::class, 'patientIndex']
+)->name('reception-requests.patient.index');
 
 Route::get(
-    '/my-blood-samples/donate',
-    [PatientBloodSampleController::class, 'create']
-)->middleware('auth')->name('patient.blood-samples.create');
-
+    '/reception-requests/create',
+    [ReceptionRequestController::class, 'create']
+)->name('reception-requests.create');
 
 Route::post(
-    '/my-blood-samples/donate',
-    [PatientBloodSampleController::class, 'store']
-)->middleware('auth')->name('patient.blood-samples.store');
+    '/reception-requests',
+    [ReceptionRequestController::class, 'store']
+)->name('reception-requests.store');
 
+
+// Receptionist
+Route::get(
+    '/receptionist/reception-requests',
+    [ReceptionRequestController::class, 'receptionistIndex']
+)->name('reception-requests.receptionist.index');
+
+Route::patch(
+    '/receptionist/reception-requests/{receptionRequest}/process',
+    [ReceptionRequestController::class, 'process']
+)->name('reception-requests.process');
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes
+| Transportation
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Transportation
-    |--------------------------------------------------------------------------
-    */
 
     Route::get(
         '/transportation',
@@ -142,13 +265,16 @@ Route::middleware('auth')->group(function () {
         '/transportation/{transportation}/deliver',
         [SampleTransportationController::class, 'deliver']
     )->name('transportation.deliver');
+});
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Profile
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| Profile
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
 
     Route::get(
         '/profile',
@@ -168,8 +294,3 @@ Route::middleware('auth')->group(function () {
 
 
 require __DIR__.'/auth.php';
-
-
-Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
-Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');

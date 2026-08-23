@@ -22,44 +22,206 @@
             <!-- Desktop Navigation Links -->
             <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
 
-
                 <!-- Dashboard -->
                 <x-nav-link
                     :href="auth()->user()->role === 'admin'
                         ? route('admin.dashboard')
                         : route('dashboard')"
-                    :active="request()->routeIs('admin.dashboard') || request()->routeIs('dashboard')"
+                    :active="request()->routeIs('admin.dashboard')
+                        || request()->routeIs('dashboard')"
                 >
                     {{ __('Dashboard') }}
                 </x-nav-link>
 
 
-                <!-- Blood Samples -->
-                <x-nav-link
-                    :href="route('blood-samples.index')"
-                    :active="request()->routeIs('blood-samples.*')"
-                >
-                    {{ __('Blood Samples') }}
-                </x-nav-link>
+                {{-- ===================================================== --}}
+                {{-- PATIENT --}}
+                {{-- ===================================================== --}}
+
+                @if(auth()->user()->role === 'patient')
+
+                    <!-- Sample Requests -->
+                    <x-nav-link
+                        :href="route('sample-requests.patient.index')"
+                        :active="request()->routeIs('sample-requests.patient.*')
+                            || request()->routeIs('sample-requests.create')
+                            || request()->routeIs('sample-requests.tracking')"
+                    >
+                        {{ __('Sample Requests') }}
+                    </x-nav-link>
 
 
-                <!-- Inventory -->
-                <x-nav-link
-                    :href="route('inventory.index')"
-                    :active="request()->routeIs('inventory.*')"
-                >
-                    {{ __('Inventory') }}
-                </x-nav-link>
+                    <!-- Reception Assistance -->
+                    <x-nav-link
+                        :href="route('reception-requests.patient.index')"
+                        :active="request()->routeIs('reception-requests.patient.*')
+                            || request()->routeIs('reception-requests.create')"
+                    >
+                        {{ __('Reception Assistance') }}
+                    </x-nav-link>
 
 
-                <!-- Transportation -->
-                <x-nav-link
-                    :href="route('transportation.index')"
-                    :active="request()->routeIs('transportation.*')"
-                >
-                    {{ __('Transportation') }}
-                </x-nav-link>
+                    <!-- My Blood Samples -->
+                    <x-nav-link
+                        :href="route('patient.blood-samples.index')"
+                        :active="request()->routeIs('patient.blood-samples.*')"
+                    >
+                        {{ __('My Samples') }}
+                    </x-nav-link>
 
+                @endif
+
+
+                {{-- ===================================================== --}}
+                {{-- RECEPTIONIST --}}
+                {{-- ===================================================== --}}
+
+                @if(auth()->user()->role === 'receptionist')
+
+                    <!-- Sample Requests -->
+                    <x-nav-link
+                        :href="route('sample-requests.receptionist.index')"
+                        :active="request()->routeIs('sample-requests.receptionist.*')"
+                    >
+                        {{ __('Sample Requests') }}
+                    </x-nav-link>
+
+
+                    <!-- Incoming Patient Requests -->
+                    <x-nav-link
+                        :href="route('reception-requests.receptionist.index')"
+                        :active="request()->routeIs('reception-requests.receptionist.*')
+                            || request()->routeIs('reception-requests.process')"
+                    >
+                        {{ __('Incoming Requests') }}
+                    </x-nav-link>
+
+                @endif
+
+
+                {{-- ===================================================== --}}
+                {{-- ADMIN --}}
+                {{-- ===================================================== --}}
+
+                @if(auth()->user()->role === 'admin')
+
+                    <!-- Sample Requests -->
+                    <x-nav-link
+                        :href="route('sample-requests.admin.index')"
+                        :active="request()->routeIs('sample-requests.admin.*')
+                            || request()->routeIs('sample-requests.approve')
+                            || request()->routeIs('sample-requests.decline')
+                            || request()->routeIs('sample-requests.assign-collector')"
+                    >
+                        {{ __('Sample Requests') }}
+                    </x-nav-link>
+
+
+                    <!-- Blood Samples -->
+                    <x-nav-link
+                        :href="route('blood-samples.index')"
+                        :active="request()->routeIs('blood-samples.*')"
+                    >
+                        {{ __('Blood Samples') }}
+                    </x-nav-link>
+
+
+                    <!-- Inventory -->
+                    <x-nav-link
+                        :href="route('inventory.index')"
+                        :active="request()->routeIs('inventory.*')"
+                    >
+                        {{ __('Inventory') }}
+                    </x-nav-link>
+
+
+                    <!-- Transportation -->
+                    <x-nav-link
+                        :href="route('transportation.index')"
+                        :active="request()->routeIs('transportation.*')"
+                    >
+                        {{ __('Transportation') }}
+                    </x-nav-link>
+
+                @endif
+
+
+                {{-- ===================================================== --}}
+                {{-- LAB STAFF --}}
+                {{-- ===================================================== --}}
+
+                @if(auth()->user()->role === 'lab_staff')
+
+                    <!-- Blood Samples -->
+                    <x-nav-link
+                        :href="route('blood-samples.index')"
+                        :active="request()->routeIs('blood-samples.*')"
+                    >
+                        {{ __('Blood Samples') }}
+                    </x-nav-link>
+
+
+                    <!-- Inventory -->
+                    <x-nav-link
+                        :href="route('inventory.index')"
+                        :active="request()->routeIs('inventory.*')"
+                    >
+                        {{ __('Inventory') }}
+                    </x-nav-link>
+
+
+                    <!-- Transportation -->
+                    <x-nav-link
+                        :href="route('transportation.index')"
+                        :active="request()->routeIs('transportation.*')"
+                    >
+                        {{ __('Transportation') }}
+                    </x-nav-link>
+
+                @endif
+
+
+                {{-- ===================================================== --}}
+                {{-- SAMPLE COLLECTOR --}}
+                {{-- ===================================================== --}}
+
+                @if(auth()->user()->role === 'sample_collector')
+
+                    <!-- Transportation -->
+                    <x-nav-link
+                        :href="route('transportation.index')"
+                        :active="request()->routeIs('transportation.*')"
+                    >
+                        {{ __('Transportation') }}
+                    </x-nav-link>
+
+
+                    <!-- Inventory -->
+                    <x-nav-link
+                        :href="route('inventory.index')"
+                        :active="request()->routeIs('inventory.*')"
+                    >
+                        {{ __('Inventory') }}
+                    </x-nav-link>
+
+                @endif
+
+
+                {{-- ===================================================== --}}
+                {{-- DOCTOR --}}
+                {{-- ===================================================== --}}
+
+                @if(auth()->user()->role === 'doctor')
+
+                    <!-- Blood Samples -->
+                    <x-nav-link
+                        :href="route('blood-samples.index')"
+                        :active="request()->routeIs('blood-samples.*')"
+                    >
+                        {{ __('Blood Samples') }}
+                    </x-nav-link>
+
+                @endif
 
             </div>
 
@@ -200,54 +362,214 @@
     class="hidden sm:hidden"
 >
 
-
     <div class="pt-2 pb-3 space-y-1">
-
 
         <!-- Dashboard -->
         <x-responsive-nav-link
             :href="auth()->user()->role === 'admin'
                 ? route('admin.dashboard')
                 : route('dashboard')"
-            :active="request()->routeIs('admin.dashboard') || request()->routeIs('dashboard')"
+            :active="request()->routeIs('admin.dashboard')
+                || request()->routeIs('dashboard')"
         >
             {{ __('Dashboard') }}
         </x-responsive-nav-link>
 
 
-        <!-- Blood Samples -->
-        <x-responsive-nav-link
-            :href="route('blood-samples.index')"
-            :active="request()->routeIs('blood-samples.*')"
-        >
-            {{ __('Blood Samples') }}
-        </x-responsive-nav-link>
+        {{-- ===================================================== --}}
+        {{-- PATIENT --}}
+        {{-- ===================================================== --}}
+
+        @if(auth()->user()->role === 'patient')
+
+            <!-- Sample Requests -->
+            <x-responsive-nav-link
+                :href="route('sample-requests.patient.index')"
+                :active="request()->routeIs('sample-requests.patient.*')
+                    || request()->routeIs('sample-requests.create')
+                    || request()->routeIs('sample-requests.tracking')"
+            >
+                {{ __('Sample Requests') }}
+            </x-responsive-nav-link>
 
 
-        <!-- Inventory -->
-        <x-responsive-nav-link
-            :href="route('inventory.index')"
-            :active="request()->routeIs('inventory.*')"
-        >
-            {{ __('Inventory') }}
-        </x-responsive-nav-link>
+            <!-- Reception Assistance -->
+            <x-responsive-nav-link
+                :href="route('reception-requests.patient.index')"
+                :active="request()->routeIs('reception-requests.patient.*')
+                    || request()->routeIs('reception-requests.create')"
+            >
+                {{ __('Reception Assistance') }}
+            </x-responsive-nav-link>
 
 
-        <!-- Transportation -->
-        <x-responsive-nav-link
-            :href="route('transportation.index')"
-            :active="request()->routeIs('transportation.*')"
-        >
-            {{ __('Transportation') }}
-        </x-responsive-nav-link>
+            <!-- My Samples -->
+            <x-responsive-nav-link
+                :href="route('patient.blood-samples.index')"
+                :active="request()->routeIs('patient.blood-samples.*')"
+            >
+                {{ __('My Samples') }}
+            </x-responsive-nav-link>
 
+        @endif
+
+
+        {{-- ===================================================== --}}
+        {{-- RECEPTIONIST --}}
+        {{-- ===================================================== --}}
+
+        @if(auth()->user()->role === 'receptionist')
+
+            <!-- Sample Requests -->
+            <x-responsive-nav-link
+                :href="route('sample-requests.receptionist.index')"
+                :active="request()->routeIs('sample-requests.receptionist.*')"
+            >
+                {{ __('Sample Requests') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Incoming Requests -->
+            <x-responsive-nav-link
+                :href="route('reception-requests.receptionist.index')"
+                :active="request()->routeIs('reception-requests.receptionist.*')
+                    || request()->routeIs('reception-requests.process')"
+            >
+                {{ __('Incoming Requests') }}
+            </x-responsive-nav-link>
+
+        @endif
+
+
+        {{-- ===================================================== --}}
+        {{-- ADMIN --}}
+        {{-- ===================================================== --}}
+
+        @if(auth()->user()->role === 'admin')
+
+            <!-- Sample Requests -->
+            <x-responsive-nav-link
+                :href="route('sample-requests.admin.index')"
+                :active="request()->routeIs('sample-requests.admin.*')
+                    || request()->routeIs('sample-requests.approve')
+                    || request()->routeIs('sample-requests.decline')
+                    || request()->routeIs('sample-requests.assign-collector')"
+            >
+                {{ __('Sample Requests') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Blood Samples -->
+            <x-responsive-nav-link
+                :href="route('blood-samples.index')"
+                :active="request()->routeIs('blood-samples.*')"
+            >
+                {{ __('Blood Samples') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Inventory -->
+            <x-responsive-nav-link
+                :href="route('inventory.index')"
+                :active="request()->routeIs('inventory.*')"
+            >
+                {{ __('Inventory') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Transportation -->
+            <x-responsive-nav-link
+                :href="route('transportation.index')"
+                :active="request()->routeIs('transportation.*')"
+            >
+                {{ __('Transportation') }}
+            </x-responsive-nav-link>
+
+        @endif
+
+
+        {{-- ===================================================== --}}
+        {{-- LAB STAFF --}}
+        {{-- ===================================================== --}}
+
+        @if(auth()->user()->role === 'lab_staff')
+
+            <!-- Blood Samples -->
+            <x-responsive-nav-link
+                :href="route('blood-samples.index')"
+                :active="request()->routeIs('blood-samples.*')"
+            >
+                {{ __('Blood Samples') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Inventory -->
+            <x-responsive-nav-link
+                :href="route('inventory.index')"
+                :active="request()->routeIs('inventory.*')"
+            >
+                {{ __('Inventory') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Transportation -->
+            <x-responsive-nav-link
+                :href="route('transportation.index')"
+                :active="request()->routeIs('transportation.*')"
+            >
+                {{ __('Transportation') }}
+            </x-responsive-nav-link>
+
+        @endif
+
+
+        {{-- ===================================================== --}}
+        {{-- SAMPLE COLLECTOR --}}
+        {{-- ===================================================== --}}
+
+        @if(auth()->user()->role === 'sample_collector')
+
+            <!-- Transportation -->
+            <x-responsive-nav-link
+                :href="route('transportation.index')"
+                :active="request()->routeIs('transportation.*')"
+            >
+                {{ __('Transportation') }}
+            </x-responsive-nav-link>
+
+
+            <!-- Inventory -->
+            <x-responsive-nav-link
+                :href="route('inventory.index')"
+                :active="request()->routeIs('inventory.*')"
+            >
+                {{ __('Inventory') }}
+            </x-responsive-nav-link>
+
+        @endif
+
+
+        {{-- ===================================================== --}}
+        {{-- DOCTOR --}}
+        {{-- ===================================================== --}}
+
+        @if(auth()->user()->role === 'doctor')
+
+            <!-- Blood Samples -->
+            <x-responsive-nav-link
+                :href="route('blood-samples.index')"
+                :active="request()->routeIs('blood-samples.*')"
+            >
+                {{ __('Blood Samples') }}
+            </x-responsive-nav-link>
+
+        @endif
 
     </div>
 
 
     <!-- Responsive Settings Options -->
     <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-
 
         <div class="px-4">
 
@@ -263,7 +585,6 @@
 
 
         <div class="mt-3 space-y-1">
-
 
             <x-responsive-nav-link :href="route('profile.edit')">
                 {{ __('Profile') }}
@@ -285,7 +606,6 @@
                 </x-responsive-nav-link>
 
             </form>
-
 
         </div>
 
