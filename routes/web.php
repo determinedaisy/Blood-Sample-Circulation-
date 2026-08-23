@@ -1,12 +1,13 @@
 <?php
 
-
-use App\Http\Controllers\ReceptionRequestController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BloodSampleReviewController;
+use App\Http\Controllers\DonorRequestController;
+use App\Http\Controllers\EmergencySOSController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceptionRequestController;
 use App\Http\Controllers\SampleRequestController;
 use App\Http\Controllers\SampleTransportationController;
 
@@ -44,23 +45,23 @@ Route::get('/dashboard', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin Dashboard
-|--------------------------------------------------------------------------
-*/
-
-Route::get(
-    '/admin/dashboard',
-    [AdminDashboardController::class, 'index']
-)->middleware('auth')->name('admin.dashboard');
-
-
-/*
-|--------------------------------------------------------------------------
-| FEATURE 2: Sample Requests
+| Authenticated Routes
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Dashboard
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/admin/dashboard',
+        [AdminDashboardController::class, 'index']
+    )->name('admin.dashboard');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -83,6 +84,11 @@ Route::middleware('auth')->group(function () {
         [SampleRequestController::class, 'store']
     )->name('sample-requests.store');
 
+    Route::get(
+        '/sample-requests/{sampleRequest}/tracking',
+        [SampleRequestController::class, 'tracking']
+    )->name('sample-requests.tracking');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -91,21 +97,19 @@ Route::middleware('auth')->group(function () {
     */
 
     Route::get(
+        '/receptionist/sample-requests',
+        [SampleRequestController::class, 'receptionistIndex']
+    )->name('sample-requests.receptionist.index');
+
+    Route::get(
         '/receptionist/sample-requests/create',
         [SampleRequestController::class, 'receptionistCreate']
     )->name('sample-requests.receptionist.create');
-Route::get(
-    '/receptionist/sample-requests',
-    [SampleRequestController::class, 'receptionistIndex']
-)->name('sample-requests.receptionist.index');
+
     Route::post(
         '/receptionist/sample-requests',
         [SampleRequestController::class, 'receptionistStore']
     )->name('sample-requests.receptionist.store');
-    Route::get(
-    '/sample-requests/{sampleRequest}/tracking',
-    [SampleRequestController::class, 'tracking']
-)->name('sample-requests.tracking');
 
 
     /*
@@ -133,33 +137,65 @@ Route::get(
         '/admin/sample-requests/{sampleRequest}/assign-collector',
         [SampleRequestController::class, 'assignCollector']
     )->name('sample-requests.assign-collector');
-});
 
 
-/*
-|--------------------------------------------------------------------------
-| Blood Sample Review
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Receptionist
+    |--------------------------------------------------------------------------
+    */
 
-Route::get(
-    '/blood-samples',
-    [BloodSampleReviewController::class, 'index']
-)->middleware('auth')->name('blood-samples.index');
+    // Patient
+    Route::get(
+        '/reception-requests',
+        [ReceptionRequestController::class, 'patientIndex']
+    )->name('reception-requests.patient.index');
 
-Route::patch(
-    '/blood-samples/{bloodSample}/review',
-    [BloodSampleReviewController::class, 'update']
-)->middleware('auth')->name('blood-samples.review');
+    Route::get(
+        '/reception-requests/create',
+        [ReceptionRequestController::class, 'create']
+    )->name('reception-requests.create');
+
+    Route::post(
+        '/reception-requests',
+        [ReceptionRequestController::class, 'store']
+    )->name('reception-requests.store');
 
 
-/*
-|--------------------------------------------------------------------------
-| Blood Inventory
-|--------------------------------------------------------------------------
-*/
+    // Receptionist
+    Route::get(
+        '/receptionist/reception-requests',
+        [ReceptionRequestController::class, 'receptionistIndex']
+    )->name('reception-requests.receptionist.index');
 
-Route::middleware('auth')->group(function () {
+    Route::patch(
+        '/receptionist/reception-requests/{receptionRequest}/process',
+        [ReceptionRequestController::class, 'process']
+    )->name('reception-requests.process');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blood Sample Review
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/blood-samples',
+        [BloodSampleReviewController::class, 'index']
+    )->name('blood-samples.index');
+
+    Route::patch(
+        '/blood-samples/{bloodSample}/review',
+        [BloodSampleReviewController::class, 'update']
+    )->name('blood-samples.review');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blood Inventory
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/inventory',
@@ -180,16 +216,13 @@ Route::middleware('auth')->group(function () {
         '/inventory/{bloodSample}/collect',
         [InventoryController::class, 'collect']
     )->name('inventory.collect');
-});
 
 
-/*
-|--------------------------------------------------------------------------
-| Patient Blood Samples
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware('auth')->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Patient Blood Samples
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/my-blood-samples',
@@ -205,46 +238,47 @@ Route::middleware('auth')->group(function () {
         '/my-blood-samples/donate',
         [PatientBloodSampleController::class, 'store']
     )->name('patient.blood-samples.store');
-});
-// =====================================================
-// CONTACT RECEPTIONIST
-// =====================================================
-
-// Patient
-Route::get(
-    '/reception-requests',
-    [ReceptionRequestController::class, 'patientIndex']
-)->name('reception-requests.patient.index');
-
-Route::get(
-    '/reception-requests/create',
-    [ReceptionRequestController::class, 'create']
-)->name('reception-requests.create');
-
-Route::post(
-    '/reception-requests',
-    [ReceptionRequestController::class, 'store']
-)->name('reception-requests.store');
 
 
-// Receptionist
-Route::get(
-    '/receptionist/reception-requests',
-    [ReceptionRequestController::class, 'receptionistIndex']
-)->name('reception-requests.receptionist.index');
+    /*
+    |--------------------------------------------------------------------------
+    | Emergency SOS
+    |--------------------------------------------------------------------------
+    */
 
-Route::patch(
-    '/receptionist/reception-requests/{receptionRequest}/process',
-    [ReceptionRequestController::class, 'process']
-)->name('reception-requests.process');
+    Route::get(
+        '/sos',
+        [EmergencySOSController::class, 'index']
+    )->name('sos.index');
 
-/*
-|--------------------------------------------------------------------------
-| Transportation
-|--------------------------------------------------------------------------
-*/
+    Route::post(
+        '/sos',
+        [EmergencySOSController::class, 'store']
+    )->name('sos.store');
 
-Route::middleware('auth')->group(function () {
+    Route::get(
+        '/sos/results',
+        [EmergencySOSController::class, 'results']
+    )->name('sos.results');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Donor Request
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/donor-request/{donor}',
+        [DonorRequestController::class, 'store']
+    )->name('donor.request');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Transportation
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/transportation',
@@ -265,16 +299,13 @@ Route::middleware('auth')->group(function () {
         '/transportation/{transportation}/deliver',
         [SampleTransportationController::class, 'deliver']
     )->name('transportation.deliver');
-});
 
 
-/*
-|--------------------------------------------------------------------------
-| Profile
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware('auth')->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Profile
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/profile',
@@ -290,6 +321,7 @@ Route::middleware('auth')->group(function () {
         '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
+
 });
 
 
