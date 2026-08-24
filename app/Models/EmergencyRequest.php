@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class EmergencyRequest extends Model
 {
     protected $fillable = [
-        'patient_id',
-        'blood_group',
-        'latitude',
-        'longitude',
-        'status',
-    ];
+    'patient_id',
+    'blood_group',
+    'latitude',
+    'longitude',
+    'status',
+    'priority',
+    'priority_reason',
+];
 
 
     public function patient()
