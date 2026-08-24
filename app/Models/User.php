@@ -42,9 +42,9 @@ class User extends Authenticatable
     }
 
     public function patientProfile()
-    {
-        return $this->hasOne(Patient::class);
-    }
+{
+    return $this->hasOne(Patient::class, 'user_id');
+}
 
     public function doctorReviews()
     {
