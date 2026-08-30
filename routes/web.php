@@ -1,57 +1,31 @@
 <?php
 
-use App\Http\Controllers\SampleHistoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\DonorRequestController;
+use App\Http\Controllers\EmergencyPriorityController;
 use App\Http\Controllers\EmergencySOSController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceptionRequestController;
+use App\Http\Controllers\SampleHistoryController;
 use App\Http\Controllers\SampleRequestController;
 use App\Http\Controllers\SampleTransportationController;
-
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
-| Homepage
+| Public Routes
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', function () {
-    return view('home');
+    return view('welcome');
 })->name('home');
 
-
-/*
-|--------------------------------------------------------------------------
-| Dashboard
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/dashboard', function () {
-
-    if (Auth::user()->role === 'admin') {
-        return redirect()->route('admin.dashboard');
-    }
-
-    return view('dashboard');
-
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-
-/*
-|--------------------------------------------------------------------------
-| Digital Sample Card (QR Code Destination)
-|--------------------------------------------------------------------------
-*/
-
 Route::get('/sample/card/{sample_code}', function ($sample_code) {
-    // Eager load everything needed for the overallStatus() to calculate accurately
     $sample = \App\Models\BloodSample::with([
         'patient', 
         'sampleRequest', 
@@ -61,6 +35,7 @@ Route::get('/sample/card/{sample_code}', function ($sample_code) {
     return view('sample-card', compact('sample'));
 })->name('sample.card');
 
+Route::get('/sample-history/{sample_code}', [SampleHistoryController::class, 'show'])->name('sample.history');
 
 /*
 |--------------------------------------------------------------------------
@@ -68,317 +43,60 @@ Route::get('/sample/card/{sample_code}', function ($sample_code) {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth'])->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', function () {
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        return view('dashboard');
+    })->middleware('verified')->name('dashboard');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Admin Dashboard
-    |--------------------------------------------------------------------------
-    */
+    // Admin Dashboard
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
-    Route::get(
-        '/admin/dashboard',
-        [AdminDashboardController::class, 'index']
-    )->name('admin.dashboard');
+    // Emergency Priority Management
+    Route::get('/admin/emergency-priority', [EmergencyPriorityController::class, 'index'])->name('admin.emergency-priority');
+    Route::patch('/admin/emergency-priority/{emergencyRequest}', [EmergencyPriorityController::class, 'update'])->name('admin.emergency-priority.update');
 
+    // Blood Sample Review
+    Route::get('/blood-samples', [BloodSampleReviewController::class, 'index'])->name('blood-samples.index');
+    Route::patch('/blood-samples/{bloodSample}/review', [BloodSampleReviewController::class, 'update'])->name('blood-samples.review');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Patient Sample Requests
-    |--------------------------------------------------------------------------
-    */
+    // Blood Inventory
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::patch('/inventory/{bloodSample}/collect', [InventoryController::class, 'collect'])->name('inventory.collect');
 
-    Route::get(
-        '/sample-requests',
-        [SampleRequestController::class, 'patientIndex']
-    )->name('sample-requests.patient.index');
+    // Patient Blood Samples
+    Route::get('/my-blood-samples', [PatientBloodSampleController::class, 'index'])->name('patient.blood-samples.index');
+    Route::get('/my-blood-samples/donate', [PatientBloodSampleController::class, 'create'])->name('patient.blood-samples.create');
+    Route::post('/my-blood-samples/donate', [PatientBloodSampleController::class, 'store'])->name('patient.blood-samples.store');
 
-    Route::get(
-        '/sample-requests/create',
-        [SampleRequestController::class, 'create']
-    )->name('sample-requests.create');
+    // Emergency SOS
+    Route::get('/sos', [EmergencySOSController::class, 'index'])->name('sos.index');
+    Route::post('/sos', [EmergencySOSController::class, 'store'])->name('sos.store');
+    Route::get('/sos/results', [EmergencySOSController::class, 'results'])->name('sos.results');
 
-    Route::post(
-        '/sample-requests',
-        [SampleRequestController::class, 'store']
-    )->name('sample-requests.store');
+    // Donor Request
+    Route::post('/donor-request/{donor}', [DonorRequestController::class, 'store'])->name('donor.request');
 
-    /*
-    | IMPORTANT:
-    | This is your sample tracking feature.
-    */
-    Route::get(
-        '/sample-requests/{sampleRequest}/tracking',
-        [SampleRequestController::class, 'tracking']
-    )->name('sample-requests.tracking');
+    // Transportation
+    Route::get('/transportation', [SampleTransportationController::class, 'index'])->name('transportation.index');
+    Route::post('/transportation', [SampleTransportationController::class, 'store'])->name('transportation.store');
+    Route::patch('/transportation/{transportation}/start', [SampleTransportationController::class, 'start'])->name('transportation.start');
+    Route::patch('/transportation/{transportation}/deliver', [SampleTransportationController::class, 'deliver'])->name('transportation.deliver');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Receptionist Sample Requests
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/receptionist/sample-requests',
-        [SampleRequestController::class, 'receptionistIndex']
-    )->name('sample-requests.receptionist.index');
-
-    Route::get(
-        '/receptionist/sample-requests/create',
-        [SampleRequestController::class, 'receptionistCreate']
-    )->name('sample-requests.receptionist.create');
-
-    Route::post(
-        '/receptionist/sample-requests',
-        [SampleRequestController::class, 'receptionistStore']
-    )->name('sample-requests.receptionist.store');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Admin Sample Requests
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/admin/sample-requests',
-        [SampleRequestController::class, 'adminIndex']
-    )->name('sample-requests.admin.index');
-
-    Route::patch(
-        '/admin/sample-requests/{sampleRequest}/approve',
-        [SampleRequestController::class, 'approve']
-    )->name('sample-requests.approve');
-
-    Route::patch(
-        '/admin/sample-requests/{sampleRequest}/decline',
-        [SampleRequestController::class, 'decline']
-    )->name('sample-requests.decline');
-
-    Route::post(
-        '/admin/sample-requests/{sampleRequest}/assign-collector',
-        [SampleRequestController::class, 'assignCollector']
-    )->name('sample-requests.assign-collector');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reception Assistance
-    |--------------------------------------------------------------------------
-    | Patient contacts receptionist.
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/reception-requests',
-        [ReceptionRequestController::class, 'patientIndex']
-    )->name('reception-requests.patient.index');
-
-    Route::get(
-        '/reception-requests/create',
-        [ReceptionRequestController::class, 'create']
-    )->name('reception-requests.create');
-
-    Route::post(
-        '/reception-requests',
-        [ReceptionRequestController::class, 'store']
-    )->name('reception-requests.store');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Receptionist Incoming Assistance Requests
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/receptionist/reception-requests',
-        [ReceptionRequestController::class, 'receptionistIndex']
-    )->name('reception-requests.receptionist.index');
-
-    Route::patch(
-        '/receptionist/reception-requests/{receptionRequest}/process',
-        [ReceptionRequestController::class, 'process']
-    )->name('reception-requests.process');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Blood Sample Review
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/blood-samples',
-        [BloodSampleReviewController::class, 'index']
-    )->name('blood-samples.index');
-
-    Route::patch(
-        '/blood-samples/{bloodSample}/review',
-        [BloodSampleReviewController::class, 'update']
-    )->name('blood-samples.review');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Blood Inventory
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/inventory',
-        [InventoryController::class, 'index']
-    )->name('inventory.index');
-
-    Route::get(
-        '/inventory/create',
-        [InventoryController::class, 'create']
-    )->name('inventory.create');
-
-    Route::post(
-        '/inventory',
-        [InventoryController::class, 'store']
-    )->name('inventory.store');
-
-    Route::patch(
-        '/inventory/{bloodSample}/collect',
-        [InventoryController::class, 'collect']
-    )->name('inventory.collect');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Patient Blood Samples
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/my-blood-samples',
-        [PatientBloodSampleController::class, 'index']
-    )->name('patient.blood-samples.index');
-
-    Route::get(
-        '/my-blood-samples/donate',
-        [PatientBloodSampleController::class, 'create']
-    )->name('patient.blood-samples.create');
-
-    Route::post(
-        '/my-blood-samples/donate',
-        [PatientBloodSampleController::class, 'store']
-    )->name('patient.blood-samples.store');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Emergency SOS
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/sos',
-        [EmergencySOSController::class, 'index']
-    )->name('sos.index');
-
-    Route::post(
-        '/sos',
-        [EmergencySOSController::class, 'store']
-    )->name('sos.store');
-
-    Route::get(
-        '/sos/results',
-        [EmergencySOSController::class, 'results']
-    )->name('sos.results');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Donor Requests
-    |--------------------------------------------------------------------------
-    */
-
-    Route::post(
-        '/donor-request/{donor}',
-        [DonorRequestController::class, 'store']
-    )->name('donor.request');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Transportation
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/transportation',
-        [SampleTransportationController::class, 'index']
-    )->name('transportation.index');
-
-    Route::post(
-        '/transportation',
-        [SampleTransportationController::class, 'store']
-    )->name('transportation.store');
-
-    Route::patch(
-        '/transportation/{transportation}/start',
-        [SampleTransportationController::class, 'start']
-    )->name('transportation.start');
-
-    Route::patch(
-        '/transportation/{transportation}/deliver',
-        [SampleTransportationController::class, 'deliver']
-    )->name('transportation.deliver');
-
-
-
-    // bKash Payment Routes
+    // bKash Payment
     Route::get('/payment/bkash/initiate/{sample_code}', [App\Http\Controllers\PaymentController::class, 'initiate'])->name('payment.bkash.initiate');
     Route::get('/payment/bkash/callback', [App\Http\Controllers\PaymentController::class, 'callback'])->name('bkash.callback');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Profile
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/profile',
-        [ProfileController::class, 'edit']
-    )->name('profile.edit');
-
-    Route::patch(
-        '/profile',
-        [ProfileController::class, 'update']
-    )->name('profile.update');
-
-    Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
-
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-
-/*
-|--------------------------------------------------------------------------
-| Sample History
-|--------------------------------------------------------------------------
-| Added by latest main.
-|--------------------------------------------------------------------------
-*/
-
-
-Route::get(
-    '/sample-history/{sample_code}',
-    [SampleHistoryController::class, 'show']
-)->name('sample.history');
-
-
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
 
 require __DIR__.'/auth.php';
