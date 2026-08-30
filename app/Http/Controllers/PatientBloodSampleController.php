@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BloodSample;
+use App\Models\Donor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -22,7 +23,8 @@ class PatientBloodSampleController extends Controller
         }
 
         $bloodSamples = BloodSample::with([
-            'patient', // Added this line to fetch patient details for the QR Code
+            'patient',
+            'donor',
             'collector',
             'reviewer',
             'sampleRequest',
@@ -30,9 +32,9 @@ class PatientBloodSampleController extends Controller
             'transportations.collectionCenter',
             'transportations.laboratory',
         ])
-        ->where('patient_id', auth()->id())
-        ->latest()
-        ->get();
+            ->where('patient_id', auth()->id())
+            ->latest()
+            ->get();
 
         return view(
             'patient.blood-samples.index',
@@ -41,7 +43,7 @@ class PatientBloodSampleController extends Controller
     }
 
     /**
-     * Display the blood sample donation form.
+     * Display the patient's blood sample donation form.
      */
     public function create()
     {
@@ -80,6 +82,37 @@ class PatientBloodSampleController extends Controller
             ],
         ]);
 
+        /*
+         * A patient can also be a donor.
+         *
+         * Find the patient's existing donor profile.
+         * If the patient does not have one yet,
+         * create it automatically.
+         */
+        $patient = auth()->user();
+
+        $patientProfile = $patient->patientProfile;
+
+        $donor = Donor::firstOrCreate(
+            [
+                'user_id' => $patient->id,
+            ],
+            [
+                'blood_group' => $patientProfile?->blood_group ?? 'Unknown',
+                'phone' => $patientProfile?->phone ?? '',
+                'is_willing' => true,
+                'is_available' => true,
+                'is_verified' => false,
+                'donation_count' => 0,
+                'donor_badge' => 'none',
+                'shop_discount' => 0,
+                'donor_priority' => 0,
+            ]
+        );
+
+        /*
+         * Generate a unique blood sample code.
+         */
         do {
             $sampleCode = 'BS-' . strtoupper(Str::random(8));
         } while (
@@ -89,23 +122,27 @@ class PatientBloodSampleController extends Controller
             )->exists()
         );
 
+        /*
+         * Create the blood sample.
+         */
         BloodSample::create([
             'sample_code' => $sampleCode,
 
-            // The logged-in patient is the owner
-            'patient_id' => auth()->id(),
+            // The patient who owns the sample
+            'patient_id' => $patient->id,
 
-            // No separate collector for patient self-donation
+            // The donor who actually donated it
+            'donor_id' => $donor->id,
+
             'collected_by' => null,
 
             'sample_type' => $validated['sample_type'],
 
-            // New donations must be reviewed first
+            // New donations require laboratory review
             'status' => 'pending',
 
             'collected_at' => $validated['collected_at'],
 
-            // These are filled in later by laboratory staff
             'quality_checks' => null,
             'rejection_reason' => null,
             'reviewed_by' => null,

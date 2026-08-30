@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -10,8 +11,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-// ADDED 'role' TO THE FILLABLE ATTRIBUTE BELOW
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable([
+    'name',
+    'email',
+    'password',
+    'role',
+    'donation_count',
+    'donor_badge',
+    'shop_discount',
+    'donor_priority',
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -42,9 +51,15 @@ class User extends Authenticatable
     }
 
     public function patientProfile()
+    {
+        return $this->hasOne(Patient::class, 'user_id');
+    }
+
+public function donorProfile()
 {
-    return $this->hasOne(Patient::class, 'user_id');
+    return $this->hasOne(Donor::class, 'user_id');
 }
+
 
     public function doctorReviews()
     {
@@ -59,5 +74,74 @@ class User extends Authenticatable
     public function createdSampleRequests()
     {
         return $this->hasMany(SampleRequest::class, 'requested_by');
+    }
+
+    /**
+     * Get all blood donations made by this user.
+     */
+    public function bloodDonations()
+    {
+        return $this->hasMany(BloodSample::class, 'patient_id');
+    }
+
+    /**
+     * Count only successfully accepted donations.
+     */
+    public function successfulDonationCount(): int
+    {
+        return $this->bloodDonations()
+            ->where('status', 'accepted')
+            ->count();
+    }
+
+    /**
+     * Recalculate and save the donor badge.
+     */
+    public function updateDonorBadge(): void
+    {
+        $count = $this->successfulDonationCount();
+
+        if ($count >= 20) {
+            $badge = 'platinum';
+            $discount = 20;
+            $priority = 4;
+        } elseif ($count >= 10) {
+            $badge = 'gold';
+            $discount = 15;
+            $priority = 3;
+        } elseif ($count >= 5) {
+            $badge = 'silver';
+            $discount = 10;
+            $priority = 2;
+        } elseif ($count >= 3) {
+            $badge = 'bronze';
+            $discount = 5;
+            $priority = 1;
+        } else {
+            $badge = 'none';
+            $discount = 0;
+            $priority = 0;
+        }
+
+        $this->update([
+            'donation_count' => $count,
+            'donor_badge' => $badge,
+            'shop_discount' => $discount,
+            'donor_priority' => $priority,
+        ]);
+    }
+
+    /**
+     * Get a human-readable donor badge name.
+     */
+    public function getDonorBadgeNameAttribute(): string
+    {
+        return match ($this->donor_badge) {
+            'bronze' => 'Bronze Donor',
+            'silver' => 'Silver Donor',
+            'gold' => 'Gold Donor',
+            'platinum' => 'Platinum Donor',
+            default => 'No Badge',
+        };
     }
 }
