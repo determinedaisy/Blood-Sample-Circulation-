@@ -13,6 +13,7 @@ class SampleTransportation extends Model
         'blood_sample_id',
         'collection_center_id',
         'laboratory_id',
+        'scheduled_test_date',
         'transported_by',
         'status',
         'departure_time',
@@ -25,6 +26,7 @@ class SampleTransportation extends Model
         return [
             'departure_time' => 'datetime',
             'arrival_time' => 'datetime',
+            'scheduled_test_date' => 'date',
         ];
     }
 

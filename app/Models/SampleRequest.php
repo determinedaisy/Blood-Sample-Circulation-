@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use App\Models\HomeCollectionRequest;
 use Illuminate\Database\Eloquent\Model;
 
 class SampleRequest extends Model
@@ -16,6 +16,7 @@ class SampleRequest extends Model
         'approved_by',
         'approved_at',
         'notes',
+        'assigned_doctor_id',
     ];
 
     protected $casts = [
@@ -27,11 +28,21 @@ class SampleRequest extends Model
         return $this->belongsTo(User::class, 'patient_id');
     }
 
+    public function assignedDoctor()
+{
+    return $this->belongsTo(User::class, 'assigned_doctor_id');
+}
+
     public function requester()
     {
         return $this->belongsTo(User::class, 'requested_by');
     }
-
+public function homeCollection()
+{
+    return $this->hasOne(
+        HomeCollectionRequest::class
+    );
+}
     public function bloodSample()
     {
         return $this->belongsTo(BloodSample::class);

@@ -17,6 +17,14 @@ class Laboratory extends Model
         'is_active',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'daily_capacity' => 'integer',
+            'is_active' => 'boolean',
+        ];
+    }
+
     public function transportations()
     {
         return $this->hasMany(SampleTransportation::class);
