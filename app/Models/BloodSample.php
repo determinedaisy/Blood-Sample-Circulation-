@@ -21,6 +21,7 @@ class BloodSample extends Model
         'reviewed_by',
         'reviewed_at',
         'blood_type',
+        'donor_id',
     ];
 
     protected function casts(): array
@@ -100,4 +101,8 @@ public function overallStatus(): string
     {
         return $this->hasOne(Payment::class);
     }
+    public function donor()
+{
+    return $this->belongsTo(Donor::class, 'donor_id');
+}
 }
