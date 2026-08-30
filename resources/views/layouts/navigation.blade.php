@@ -60,6 +60,9 @@
                 >
                     🏠 {{ __('Home Collections') }}
                 </x-nav-link>
+                <x-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">
+                    {{ __('Lab Capacity') }}
+                </x-nav-link>
                 <x-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">
                     {{ __('Blood Samples') }}
                 </x-nav-link>
@@ -72,6 +75,9 @@
             @endif
 
             @if(auth()->user()->role === 'lab_staff')
+                <x-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">
+                    {{ __('Lab Capacity') }}
+                </x-nav-link>
                 <x-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">
                     {{ __('Blood Samples') }}
                 </x-nav-link>
@@ -187,12 +193,14 @@
             <x-responsive-nav-link :href="route('home-collections.admin.index')" :active="request()->routeIs('home-collections.admin.*') || request()->routeIs('home-collections.assign')">
                 🏠 {{ __('Home Collections') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">{{ __('Lab Capacity') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">{{ __('Blood Samples') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('transportation.index')" :active="request()->routeIs('transportation.*')">{{ __('Transportation') }}</x-responsive-nav-link>
         @endif
 
         @if(auth()->user()->role === 'lab_staff')
+            <x-responsive-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">{{ __('Lab Capacity') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">{{ __('Blood Samples') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('transportation.index')" :active="request()->routeIs('transportation.*')">{{ __('Transportation') }}</x-responsive-nav-link>

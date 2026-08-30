@@ -9,6 +9,7 @@ use App\Models\Laboratory;
 use App\Models\SampleRequest;
 use App\Models\SampleTransportation;
 use App\Models\User;
+use App\Services\LaboratoryCapacityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -916,7 +917,8 @@ public function store(Request $request): RedirectResponse
 
     public function assignCollector(
         Request $request,
-        SampleRequest $sampleRequest
+        SampleRequest $sampleRequest,
+        LaboratoryCapacityService $capacityService
     ): RedirectResponse {
 
         if (
@@ -975,6 +977,12 @@ public function store(Request $request): RedirectResponse
                 'required',
                 'exists:laboratories,id',
             ],
+
+            'scheduled_test_date' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+            ],
         ]);
 
         $collector = User::where(
@@ -1007,7 +1015,7 @@ public function store(Request $request): RedirectResponse
             );
         }
 
-        SampleTransportation::create([
+        $capacityService->schedule([
             'blood_sample_id' =>
                 $sampleRequest->blood_sample_id,
 
@@ -1022,11 +1030,11 @@ public function store(Request $request): RedirectResponse
 
             'status' =>
                 'pending',
-        ]);
+        ], $validated['scheduled_test_date']);
 
         return back()->with(
             'success',
-            'Collector assigned successfully.'
+            'Collector assigned and laboratory testing slot reserved successfully.'
         );
     }
 

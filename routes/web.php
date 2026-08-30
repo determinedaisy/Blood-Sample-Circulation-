@@ -7,6 +7,7 @@ use App\Http\Controllers\EmergencyPriorityController;
 use App\Http\Controllers\EmergencySOSController;
 use App\Http\Controllers\HomeCollectionController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\LaboratoryCapacityController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceptionRequestController;
@@ -86,6 +87,11 @@ Route::middleware(['auth'])->group(function () {
         ->name('home-collections.assign');
     Route::post('/admin/home-collections/{homeCollection}/send-to-laboratory', [HomeCollectionController::class, 'sendToLaboratory'])
         ->name('home-collections.send-to-laboratory');
+
+    Route::get('/laboratory-capacity', [LaboratoryCapacityController::class, 'index'])
+        ->name('laboratory-capacity.index');
+    Route::patch('/laboratory-capacity/{laboratory}', [LaboratoryCapacityController::class, 'update'])
+        ->name('laboratory-capacity.update');
 
     Route::get('/collector/home-collections', [HomeCollectionController::class, 'collectorIndex'])
         ->name('home-collections.collector.index');

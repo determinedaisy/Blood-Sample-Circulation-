@@ -6,6 +6,7 @@ use App\Models\HomeCollectionRequest;
 use App\Models\Laboratory;
 use App\Models\SampleTransportation;
 use App\Models\User;
+use App\Services\LaboratoryCapacityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -148,7 +149,8 @@ if (
 
     public function sendToLaboratory(
         Request $request,
-        HomeCollectionRequest $homeCollection
+        HomeCollectionRequest $homeCollection,
+        LaboratoryCapacityService $capacityService
     ): RedirectResponse {
 
         if (
@@ -187,6 +189,11 @@ if (
             'laboratory_id' => [
                 'required',
                 'exists:laboratories,id',
+            ],
+            'scheduled_test_date' => [
+                'required',
+                'date',
+                'after_or_equal:today',
             ],
         ]);
 
@@ -259,7 +266,7 @@ if (
          * collection_center_id = NULL means:
          * origin = patient's home.
          */
-        SampleTransportation::create([
+        $capacityService->schedule([
             'blood_sample_id' => $bloodSample->id,
 
             'collection_center_id' => null,
@@ -281,11 +288,11 @@ if (
 
             'notes' =>
                 'Home collection sample - transport from patient home to laboratory.',
-        ]);
+        ], $validated['scheduled_test_date']);
 
         return back()->with(
             'success',
-            'Sample sent to transportation queue for '.$laboratory->name.'.'
+            'Sample sent to transportation queue and a testing slot was reserved at '.$laboratory->name.'.'
         );
     }
 

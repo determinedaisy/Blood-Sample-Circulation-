@@ -452,6 +452,7 @@
                                                                         {{ old('laboratory_id') == $laboratory->id ? 'selected' : '' }}
                                                                     >
                                                                         {{ $laboratory->name }}
+                                                                        (Daily capacity: {{ $laboratory->daily_capacity ?? 20 }})
                                                                     </option>
 
                                                                 @endforeach
@@ -459,6 +460,30 @@
 
                                                             </select>
 
+                                                        </div>
+
+                                                        {{-- Scheduled laboratory testing date --}}
+                                                        <div>
+                                                            <label class="block text-xs font-semibold text-gray-600 mb-1">
+                                                                Scheduled Testing Date
+                                                            </label>
+
+                                                            <input
+                                                                type="date"
+                                                                name="scheduled_test_date"
+                                                                value="{{ old('scheduled_test_date', now()->toDateString()) }}"
+                                                                min="{{ now()->toDateString() }}"
+                                                                required
+                                                                class="w-full rounded-lg border-gray-300 text-sm"
+                                                            >
+
+                                                            @error('scheduled_test_date')
+                                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                                            @enderror
+
+                                                            @error('laboratory_id')
+                                                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                                            @enderror
                                                         </div>
 
 
@@ -514,6 +539,12 @@
                                                             </span>
 
                                                         </div>
+
+                                                        @if($transportation->scheduled_test_date)
+                                                            <div class="text-xs text-blue-700 mt-2">
+                                                                Scheduled test: {{ $transportation->scheduled_test_date->format('d M Y') }}
+                                                            </div>
+                                                        @endif
 
 
                                                     </div>
