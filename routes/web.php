@@ -9,7 +9,6 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\PatientBloodSampleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceptionRequestController;
-use App\Http\Controllers\SampleHistoryController;
 use App\Http\Controllers\SampleRequestController;
 use App\Http\Controllers\SampleTransportationController;
 
@@ -43,6 +42,24 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+
+/*
+|--------------------------------------------------------------------------
+| Digital Sample Card (QR Code Destination)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/sample/card/{sample_code}', function ($sample_code) {
+    // Eager load everything needed for the overallStatus() to calculate accurately
+    $sample = \App\Models\BloodSample::with([
+        'patient', 
+        'sampleRequest', 
+        'transportations'
+    ])->where('sample_code', $sample_code)->firstOrFail();
+    
+    return view('sample-card', compact('sample'));
+})->name('sample.card');
 
 
 /*
@@ -313,6 +330,12 @@ Route::middleware('auth')->group(function () {
     )->name('transportation.deliver');
 
 
+
+    // bKash Payment Routes
+    Route::get('/payment/bkash/initiate/{sample_code}', [App\Http\Controllers\PaymentController::class, 'initiate'])->name('payment.bkash.initiate');
+    Route::get('/payment/bkash/callback', [App\Http\Controllers\PaymentController::class, 'callback'])->name('bkash.callback');
+
+
     /*
     |--------------------------------------------------------------------------
     | Profile
@@ -345,6 +368,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
+
 Route::get(
     '/sample-history/{sample_code}',
     [SampleHistoryController::class, 'show']
@@ -358,19 +382,3 @@ Route::get(
 */
 
 require __DIR__.'/auth.php';
-
-
-
-
-## SAMPLE HISTORY ROUTE #######
-
-Route::get('/sample-history/{sample_code}', [SampleHistoryController::class, 'show'])->name('sample.history');
-
-
-
-
-
-#### Homapage Route ####
-Route::get('/', function () {
-    return view('home');
-})->name('home');

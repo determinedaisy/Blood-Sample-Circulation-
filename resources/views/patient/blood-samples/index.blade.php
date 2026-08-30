@@ -1,4 +1,19 @@
 <x-app-layout>
+            @if(session('error'))
+            <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
+                <div class="p-4 mb-4 text-sm text-red-800 rounded-xl bg-red-50 border border-red-200 shadow-sm" role="alert">
+                    <span class="font-extrabold">Payment Error:</span> {{ session('error') }}
+                </div>
+            </div>
+        @endif
+
+        @if(session('success'))
+            <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
+                <div class="p-4 mb-4 text-sm text-green-800 rounded-xl bg-green-50 border border-green-200 shadow-sm" role="alert">
+                    <span class="font-extrabold">Success:</span> {{ session('success') }}
+                </div>
+            </div>
+        @endif
 
     <x-slot name="header">
         <div class="flex items-center justify-between">
@@ -284,6 +299,25 @@
                                         · {{ $sample->blood_type }}
                                     @endif
 
+                                </div>
+
+
+                                <!-- FEATURE 3: Patient QR Code Generation -->
+                                <div class="mt-4 p-3 bg-white border border-gray-200 rounded-xl inline-block shadow-sm">
+                                    {!! QrCode::size(110)->margin(1)->generate(url('/sample/card/' . $sample->sample_code)) !!}
+                                </div>
+                                
+                                <div class="mt-4">
+                                    @if($sample->payment && $sample->payment->status === 'completed')
+                                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl font-bold text-sm">
+                                            <span>✓</span> Paid (TrxID: {{ $sample->payment->transaction_id }})
+                                        </div>
+                                    @else
+                                        <a href="{{ route('payment.bkash.initiate', $sample->sample_code) }}" 
+                                        class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-2.5 bg-[#e2136e] hover:bg-[#c70f61] text-white font-bold rounded-xl shadow-sm transition-colors duration-200">
+                                            Pay Lab Fee via bKash (500 BDT)
+                                        </a>
+                                    @endif
                                 </div>
 
                             </div>

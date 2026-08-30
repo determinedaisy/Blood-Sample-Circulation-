@@ -95,4 +95,9 @@ public function overallStatus(): string
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
+    
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
+    }
 }

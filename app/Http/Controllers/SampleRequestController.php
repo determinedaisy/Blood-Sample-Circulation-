@@ -327,6 +327,8 @@ class SampleRequestController extends Controller
         );
     }
 
+    
+
 
     /**
      * Admin: approve request.
@@ -343,6 +345,15 @@ class SampleRequestController extends Controller
             return back()->with(
                 'error',
                 'Only pending requests can be approved.'
+            );
+        }
+
+        // STRICT SECURITY CHECK: Ensure payment is completed
+        $payment = $sampleRequest->bloodSample?->payment;
+        if (!$payment || $payment->status !== 'completed') {
+            return back()->with(
+                'error',
+                'Action Denied: Cannot approve this request until the patient has completed the bKash payment.'
             );
         }
 
@@ -421,6 +432,15 @@ class SampleRequestController extends Controller
             return back()->with(
                 'error',
                 'No blood sample is connected to this request.'
+            );
+        }
+
+        // STRICT SECURITY CHECK: Ensure payment is completed
+        $payment = $sampleRequest->bloodSample?->payment;
+        if (!$payment || $payment->status !== 'completed') {
+            return back()->with(
+                'error',
+                'Action Denied: Cannot assign a collector until the lab fee is paid in full.'
             );
         }
 
