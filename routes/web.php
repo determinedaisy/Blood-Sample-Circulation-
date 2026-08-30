@@ -84,6 +84,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('home-collections.admin.index');
     Route::post('/admin/home-collections/{homeCollection}/assign', [HomeCollectionController::class, 'assignCollector'])
         ->name('home-collections.assign');
+    Route::post('/admin/home-collections/{homeCollection}/send-to-laboratory', [HomeCollectionController::class, 'sendToLaboratory'])
+        ->name('home-collections.send-to-laboratory');
 
     Route::get('/collector/home-collections', [HomeCollectionController::class, 'collectorIndex'])
         ->name('home-collections.collector.index');
