@@ -55,11 +55,10 @@ class User extends Authenticatable
         return $this->hasOne(Patient::class, 'user_id');
     }
 
-public function donorProfile()
-{
-    return $this->hasOne(Donor::class, 'user_id');
-}
-
+    public function donorProfile()
+    {
+        return $this->hasOne(Donor::class, 'user_id');
+    }
 
     public function doctorReviews()
     {
@@ -143,5 +142,29 @@ public function donorProfile()
             'platinum' => 'Platinum Donor',
             default => 'No Badge',
         };
+    }
+
+    /**
+     * Forum posts created by this user.
+     */
+    public function forumPosts()
+    {
+        return $this->hasMany(ForumPost::class);
+    }
+
+    /**
+     * Forum comments created by this user.
+     */
+    public function forumComments()
+    {
+        return $this->hasMany(ForumComment::class);
+    }
+
+    /**
+     * Forum reactions created by this user.
+     */
+    public function forumReactions()
+    {
+        return $this->hasMany(ForumReaction::class);
     }
 }
