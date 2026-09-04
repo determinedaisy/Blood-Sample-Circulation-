@@ -101,6 +101,10 @@ public function overallStatus(): string
     {
         return $this->hasOne(Payment::class);
     }
+    public function sampleReport()
+    {
+        return $this->hasOne(SampleReport::class);
+    }
     public function donor()
 {
     return $this->belongsTo(Donor::class, 'donor_id');

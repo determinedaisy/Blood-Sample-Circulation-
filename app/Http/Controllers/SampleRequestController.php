@@ -9,6 +9,8 @@ use App\Models\Laboratory;
 use App\Models\SampleRequest;
 use App\Models\SampleTransportation;
 use App\Models\User;
+use App\Notifications\PatientSampleUpdateNotification;
+use App\Notifications\SampleRequestApprovedNotification;
 use App\Services\LaboratoryCapacityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -866,9 +868,18 @@ public function store(Request $request): RedirectResponse
                 now(),
         ]);
 
+        $sampleRequest->loadMissing([
+            'patient',
+            'bloodSample',
+        ]);
+
+        $sampleRequest->patient?->notify(
+            new SampleRequestApprovedNotification($sampleRequest)
+        );
+
         return back()->with(
             'success',
-            'Sample request approved successfully. The patient may now choose home collection or normal collection.'
+            'Sample request approved successfully. The patient has been notified.'
         );
     }
 
@@ -891,6 +902,13 @@ public function store(Request $request): RedirectResponse
             );
         }
 
+        $sampleRequest->loadMissing([
+            'patient',
+            'bloodSample',
+        ]);
+
+        $sampleCode = $sampleRequest->bloodSample?->sample_code;
+
         $sampleRequest->update([
             'status' =>
                 'declined',
@@ -902,6 +920,17 @@ public function store(Request $request): RedirectResponse
                 now(),
         ]);
 
+        $sampleRequest->patient?->notify(
+            new PatientSampleUpdateNotification(
+                kind: 'sample_request_declined',
+                title: 'Sample request declined',
+                message: 'Your '.$sampleRequest->sample_type.' sample request was declined by the administrator.',
+                sampleRequestId: $sampleRequest->id,
+                sampleCode: $sampleCode,
+                actionLabel: 'View My Requests',
+            )
+        );
+
         if ($sampleRequest->bloodSample) {
             $sampleRequest
                 ->bloodSample
@@ -910,7 +939,7 @@ public function store(Request $request): RedirectResponse
 
         return back()->with(
             'success',
-            'Sample request declined.'
+            'Sample request declined. The patient has been notified.'
         );
     }
 
@@ -1154,6 +1183,7 @@ public function store(Request $request): RedirectResponse
             'requester',
             'approver',
             'bloodSample',
+            'bloodSample.sampleReport',
             'bloodSample.transportations.transporter',
             'bloodSample.transportations.collectionCenter',
             'bloodSample.transportations.laboratory',
@@ -1196,6 +1226,8 @@ public function store(Request $request): RedirectResponse
             'approver',
             'assignedDoctor.doctorProfile',
             'bloodSample',
+            'bloodSample.sampleReport.results',
+            'bloodSample.sampleReport.doctor',
             'bloodSample.transportations.transporter',
             'bloodSample.transportations.collectionCenter',
             'bloodSample.transportations.laboratory',

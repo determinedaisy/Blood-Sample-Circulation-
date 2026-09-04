@@ -1,3 +1,9 @@
+@php
+    $unreadNotificationCount = auth()->user()->role === 'patient'
+        ? auth()->user()->unreadNotifications()->count()
+        : 0;
+@endphp
+
 <div class="flex justify-between h-16">
     <div class="flex">
         <div class="shrink-0 flex items-center">
@@ -29,6 +35,19 @@
                 </x-nav-link>
                 <x-nav-link :href="route('patient.blood-samples.index')" :active="request()->routeIs('patient.blood-samples.*')">
                     {{ __('My Samples') }}
+                </x-nav-link>
+                <x-nav-link :href="route('sample-reports.patient.index')" :active="request()->routeIs('sample-reports.patient.*')">
+                    {{ __('My Reports') }}
+                </x-nav-link>
+                <x-nav-link :href="route('patient.notifications.index')" :active="request()->routeIs('patient.notifications.*')">
+                    <span class="inline-flex items-center gap-1.5">
+                        {{ __('Notifications') }}
+                        @if($unreadNotificationCount > 0)
+                            <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                                {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
+                            </span>
+                        @endif
+                    </span>
                 </x-nav-link>
                 <x-nav-link :href="route('sos.index')" :active="request()->routeIs('sos.*')">
                     🚨 {{ __('Emergency SOS') }}
@@ -72,11 +91,14 @@
                 <x-nav-link :href="route('transportation.index')" :active="request()->routeIs('transportation.*')">
                     {{ __('Transportation') }}
                 </x-nav-link>
+                <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                    {{ __('Reports') }}
+                </x-nav-link>
             @endif
 
             @if(auth()->user()->role === 'lab_staff')
                 <x-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">
-                    {{ __('Lab Capacity') }}
+                    {{ __('Laboratory Workload') }}
                 </x-nav-link>
                 <x-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">
                     {{ __('Blood Samples') }}
@@ -172,6 +194,19 @@
             <x-responsive-nav-link :href="route('patient.blood-samples.index')" :active="request()->routeIs('patient.blood-samples.*')">
                 {{ __('My Samples') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('sample-reports.patient.index')" :active="request()->routeIs('sample-reports.patient.*')">
+                {{ __('My Reports') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('patient.notifications.index')" :active="request()->routeIs('patient.notifications.*')">
+                <span class="inline-flex items-center gap-1.5">
+                    {{ __('Notifications') }}
+                    @if($unreadNotificationCount > 0)
+                        <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+                            {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
+                        </span>
+                    @endif
+                </span>
+            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('sos.index')" :active="request()->routeIs('sos.*')">
                 🚨 {{ __('Emergency SOS') }}
             </x-responsive-nav-link>
@@ -197,10 +232,11 @@
             <x-responsive-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">{{ __('Blood Samples') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('transportation.index')" :active="request()->routeIs('transportation.*')">{{ __('Transportation') }}</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">{{ __('Reports') }}</x-responsive-nav-link>
         @endif
 
         @if(auth()->user()->role === 'lab_staff')
-            <x-responsive-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">{{ __('Lab Capacity') }}</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('laboratory-capacity.index')" :active="request()->routeIs('laboratory-capacity.*')">{{ __('Laboratory Workload') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('blood-samples.index')" :active="request()->routeIs('blood-samples.*')">{{ __('Blood Samples') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">{{ __('Inventory') }}</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('transportation.index')" :active="request()->routeIs('transportation.*')">{{ __('Transportation') }}</x-responsive-nav-link>

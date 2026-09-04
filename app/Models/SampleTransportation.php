@@ -37,7 +37,36 @@ class SampleTransportation extends Model
 
     public function collectionCenter()
     {
-        return $this->belongsTo(CollectionCenter::class);
+        return $this->belongsTo(CollectionCenter::class)
+            ->withDefault(function ($collectionCenter, $transportation): void {
+                $homeCollection = $transportation
+                    ->bloodSample
+                    ?->sampleRequest
+                    ?->homeCollection;
+
+                $collectionCenter->name = 'Patient Home';
+
+                if (
+                    $homeCollection?->address
+                    && $homeCollection?->latitude
+                    && $homeCollection?->longitude
+                ) {
+                    $collectionCenter->address = $homeCollection->address
+                        .' · GPS: '
+                        .$homeCollection->latitude
+                        .', '
+                        .$homeCollection->longitude;
+                } elseif ($homeCollection?->address) {
+                    $collectionCenter->address = $homeCollection->address;
+                } elseif ($homeCollection?->latitude && $homeCollection?->longitude) {
+                    $collectionCenter->address = 'GPS: '
+                        .$homeCollection->latitude
+                        .', '
+                        .$homeCollection->longitude;
+                } else {
+                    $collectionCenter->address = 'Home collection location';
+                }
+            });
     }
 
     public function laboratory()

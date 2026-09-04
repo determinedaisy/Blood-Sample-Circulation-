@@ -568,7 +568,7 @@
 
 
             {{-- ===================================================== --}}
-            {{-- CURRENT CASE STATUS / FUTURE EXTENSION POINT --}}
+            {{-- MEDICAL REPORT WORKFLOW --}}
             {{-- ===================================================== --}}
 
             <div
@@ -596,10 +596,14 @@
                             </div>
 
 
-                            <div>
+                            <div class="flex-1">
+
+                                @php($medicalReport = $sampleRequest->bloodSample?->sampleReport)
 
                                 <h3 class="font-semibold text-blue-900">
-                                    Case Ready for Medical Review
+                                    {{ $medicalReport
+                                        ? 'Medical Report '.ucfirst(str_replace('_', ' ', $medicalReport->status))
+                                        : 'Awaiting Laboratory Results' }}
                                 </h3>
 
                                 <p class="text-sm text-blue-700 mt-1">
@@ -608,10 +612,32 @@
                                     sample information above.
                                 </p>
 
-                                <p class="text-xs text-blue-600 mt-3">
-                                    Laboratory results and generated reports can be
-                                    connected to this case page in a future feature.
-                                </p>
+                                @if($medicalReport?->status === 'published')
+                                    <p class="text-xs text-green-700 mt-3">
+                                        Published {{ $medicalReport->published_at?->format('d M Y, h:i A') }} and available to the patient.
+                                    </p>
+                                @elseif($medicalReport?->status === 'lab_submitted')
+                                    <p class="text-xs text-indigo-700 mt-3">
+                                        Laboratory staff submitted the verified values and the system generated the formatted PDF. Review them before generating the explanation and publishing.
+                                    </p>
+                                @elseif($medicalReport)
+                                    <p class="text-xs text-amber-700 mt-3">
+                                        This report is still private. Complete the doctor review and explanation before publishing.
+                                    </p>
+                                @else
+                                    <p class="text-xs text-blue-600 mt-3">
+                                        Laboratory staff have not submitted test results yet. The report will appear here automatically after submission.
+                                    </p>
+                                @endif
+
+                                @if($medicalReport)
+                                    <a
+                                        href="{{ route('sample-reports.doctor.edit', $sampleRequest) }}"
+                                        class="inline-flex items-center mt-4 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                                    >
+                                        Open Medical Report
+                                    </a>
+                                @endif
 
                             </div>
 

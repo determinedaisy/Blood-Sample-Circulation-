@@ -37,7 +37,7 @@
                         >
                     </div>
                     <button class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                        View Workload
+                        Apply Date
                     </button>
                 </form>
             </div>
@@ -52,6 +52,7 @@
                                 <th class="px-6 py-3 text-center text-xs font-semibold uppercase text-gray-500">Scheduled</th>
                                 <th class="px-6 py-3 text-center text-xs font-semibold uppercase text-gray-500">Available</th>
                                 <th class="px-6 py-3 text-center text-xs font-semibold uppercase text-gray-500">Status</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold uppercase text-gray-500">Workload</th>
                                 @if(auth()->user()->role === 'admin')
                                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">Update capacity</th>
                                 @endif
@@ -67,16 +68,36 @@
                                 @endphp
                                 <tr>
                                     <td class="px-6 py-4">
-                                        <div class="font-semibold text-gray-900 dark:text-gray-100">{{ $laboratory->name }}</div>
+                                        <a
+                                            href="{{ route('laboratory-capacity.workload', $laboratory) }}"
+                                            class="font-semibold text-blue-700 hover:text-blue-900 hover:underline dark:text-blue-300"
+                                        >
+                                            {{ $laboratory->name }}
+                                        </a>
                                         <div class="text-xs text-gray-500">{{ $laboratory->address }}</div>
                                     </td>
                                     <td class="px-6 py-4 text-center font-semibold text-gray-700 dark:text-gray-200">{{ $capacity }}</td>
-                                    <td class="px-6 py-4 text-center font-semibold text-blue-700 dark:text-blue-300">{{ $scheduled }}</td>
+                                    <td class="px-6 py-4 text-center font-semibold">
+                                        <a
+                                            href="{{ route('laboratory-capacity.workload', ['laboratory' => $laboratory, 'date' => $selectedDate]) }}"
+                                            class="text-blue-700 hover:underline dark:text-blue-300"
+                                        >
+                                            {{ $scheduled }}
+                                        </a>
+                                    </td>
                                     <td class="px-6 py-4 text-center font-semibold {{ $isFull ? 'text-red-600' : 'text-green-600' }}">{{ $available }}</td>
                                     <td class="px-6 py-4 text-center">
                                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $isFull ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
                                             {{ $isFull ? 'Full' : 'Available' }}
                                         </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <a
+                                            href="{{ route('laboratory-capacity.workload', $laboratory) }}"
+                                            class="inline-flex rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                                        >
+                                            View Samples
+                                        </a>
                                     </td>
                                     @if(auth()->user()->role === 'admin')
                                         <td class="px-6 py-4">
@@ -101,7 +122,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-10 text-center text-gray-500">No laboratories found.</td>
+                                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">No laboratories found.</td>
                                 </tr>
                             @endforelse
                         </tbody>

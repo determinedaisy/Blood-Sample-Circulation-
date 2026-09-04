@@ -15,7 +15,7 @@
 
     <div class="py-8 bg-gray-100 min-h-screen">
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto w-full max-w-[1800px] px-3 sm:px-5 lg:px-6">
 
 
             {{-- Success Message --}}
@@ -83,7 +83,7 @@
 
                     <div class="overflow-x-auto">
 
-                        <table class="min-w-full">
+                        <table class="min-w-[1380px] w-full">
 
 
                             {{-- Table Header --}}

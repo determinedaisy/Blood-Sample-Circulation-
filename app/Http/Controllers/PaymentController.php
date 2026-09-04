@@ -7,6 +7,8 @@ use App\Models\Payment;
 use App\Services\BkashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+
 
 class PaymentController extends Controller
 {
@@ -24,7 +26,7 @@ class PaymentController extends Controller
     {
         $sample = BloodSample::with('payment')
             ->where('sample_code', $sample_code)
-            ->where('patient_id', auth()->id())
+            ->where('patient_id', Auth::id())
             ->firstOrFail();
 
         // Security Check: Prevent duplicate payments
@@ -47,7 +49,7 @@ class PaymentController extends Controller
                 Payment::updateOrCreate(
                     ['blood_sample_id' => $sample->id],
                     [
-                        'patient_id' => auth()->id(),
+                        'patient_id' => Auth::id(),
                         'amount' => $amount,
                         'invoice_number' => $invoiceNumber,
                         'bkash_payment_id' => $response['paymentID'],

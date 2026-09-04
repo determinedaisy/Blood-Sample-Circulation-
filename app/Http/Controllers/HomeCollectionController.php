@@ -6,10 +6,14 @@ use App\Models\HomeCollectionRequest;
 use App\Models\Laboratory;
 use App\Models\SampleTransportation;
 use App\Models\User;
+use App\Notifications\PatientSampleUpdateNotification;
 use App\Services\LaboratoryCapacityService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class HomeCollectionController extends Controller
 {
@@ -31,7 +35,7 @@ class HomeCollectionController extends Controller
         $homeCollections = HomeCollectionRequest::with([
             'patient',
             'assignedCollector',
-            'sampleRequest',
+            'sampleRequest.assignedDoctor.doctorProfile',
             'sampleRequest.bloodSample.transportations.transporter',
             'sampleRequest.bloodSample.transportations.collectionCenter',
             'sampleRequest.bloodSample.transportations.laboratory',
@@ -58,12 +62,21 @@ class HomeCollectionController extends Controller
             ->orderBy('name')
             ->get();
 
+        $availableDoctors = User::where(
+            'role',
+            'doctor'
+        )
+            ->with('doctorProfile')
+            ->orderBy('name')
+            ->get();
+
         return view(
             'home-collections.admin_index',
             compact(
                 'homeCollections',
                 'collectors',
-                'laboratories'
+                'laboratories',
+                'availableDoctors'
             )
         );
     }
@@ -78,7 +91,7 @@ class HomeCollectionController extends Controller
     public function assignCollector(
         Request $request,
         HomeCollectionRequest $homeCollection
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
 
         if (
             !Auth::check()
@@ -92,12 +105,24 @@ if (
     !$homeCollection->sampleRequest
     || $homeCollection->sampleRequest->status !== 'approved'
 ) {
+    if ($request->expectsJson()) {
+        return response()->json([
+            'message' => 'This sample request must be approved before a home collector can be assigned.',
+        ], 422);
+    }
+
     return back()->with(
         'error',
         'This sample request must be approved before a home collector can be assigned.'
     );
 }
         if ($homeCollection->status !== 'pending') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Only pending home collection requests can be assigned.',
+                ], 422);
+            }
+
             return back()->with(
                 'error',
                 'Only pending home collection requests can be assigned.'
@@ -122,6 +147,12 @@ if (
             ->first();
 
         if (!$collector) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'The selected user is not a sample collector.',
+                ], 422);
+            }
+
             return back()->with(
                 'error',
                 'The selected user is not a sample collector.'
@@ -134,10 +165,76 @@ if (
             'assigned_at' => now(),
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Home collection collector assigned successfully.',
+                'collector' => [
+                    'id' => $collector->id,
+                    'name' => $collector->name,
+                ],
+                'assigned_at' => $homeCollection->assigned_at?->format('d M Y, h:i A'),
+            ]);
+        }
+
         return back()->with(
             'success',
             'Home collection collector assigned successfully.'
         );
+    }
+
+    public function updateRouteOrder(Request $request): JsonResponse
+    {
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'route_date' => ['required', 'date'],
+            'collector_id' => ['required', 'integer', 'exists:users,id'],
+            'ordered_ids' => ['required', 'array', 'min:1'],
+            'ordered_ids.*' => ['required', 'integer', 'distinct', 'exists:home_collection_requests,id'],
+        ]);
+
+        $collector = User::where('id', $validated['collector_id'])
+            ->where('role', 'sample_collector')
+            ->first();
+
+        if (!$collector) {
+            throw ValidationException::withMessages([
+                'collector_id' => 'The selected user is not a sample collector.',
+            ]);
+        }
+
+        $orderedIds = collect($validated['ordered_ids'])->map(fn ($id) => (int) $id)->values();
+        $matchingCount = HomeCollectionRequest::query()
+            ->whereIn('id', $orderedIds)
+            ->where('assigned_collector_id', $collector->id)
+            ->whereDate('preferred_date', $validated['route_date'])
+            ->count();
+
+        if ($matchingCount !== $orderedIds->count()) {
+            throw ValidationException::withMessages([
+                'ordered_ids' => 'Every stop must belong to the selected collector and route date.',
+            ]);
+        }
+
+        DB::transaction(function () use ($validated, $collector, $orderedIds): void {
+            DB::table('home_collection_requests')
+                ->where('assigned_collector_id', $collector->id)
+                ->whereDate('preferred_date', $validated['route_date'])
+                ->update(['route_order' => null]);
+
+            foreach ($orderedIds as $index => $homeCollectionId) {
+                DB::table('home_collection_requests')
+                    ->where('id', $homeCollectionId)
+                    ->update(['route_order' => $index + 1]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Daily collection route saved successfully.',
+            'stop_count' => $orderedIds->count(),
+        ]);
     }
 
 
@@ -323,6 +420,8 @@ if (
                 Auth::id()
             )
             ->orderBy('preferred_date')
+            ->orderByRaw('CASE WHEN route_order IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('route_order')
             ->orderBy('preferred_time')
             ->get();
 
@@ -357,6 +456,23 @@ if (
             'on_the_way_at' => now(),
         ]);
 
+        $homeCollection->loadMissing([
+            'patient',
+            'assignedCollector',
+            'sampleRequest.bloodSample',
+        ]);
+
+        $homeCollection->patient?->notify(
+            new PatientSampleUpdateNotification(
+                kind: 'home_collector_on_the_way',
+                title: 'Collector is on the way',
+                message: ($homeCollection->assignedCollector?->name ?? 'Your assigned collector').' is travelling to your home for the scheduled sample collection.',
+                sampleRequestId: $homeCollection->sample_request_id,
+                sampleCode: $homeCollection->sampleRequest?->bloodSample?->sample_code,
+                actionLabel: 'Track Collection',
+            )
+        );
+
         return back()->with(
             'success',
             'Trip started successfully. The patient can now see that you are on the way.'
@@ -387,6 +503,23 @@ if (
             'status' => 'arrived',
             'arrived_at' => now(),
         ]);
+
+        $homeCollection->loadMissing([
+            'patient',
+            'assignedCollector',
+            'sampleRequest.bloodSample',
+        ]);
+
+        $homeCollection->patient?->notify(
+            new PatientSampleUpdateNotification(
+                kind: 'home_collector_arrived',
+                title: 'Collector has arrived',
+                message: ($homeCollection->assignedCollector?->name ?? 'Your assigned collector').' has arrived for your home sample collection.',
+                sampleRequestId: $homeCollection->sample_request_id,
+                sampleCode: $homeCollection->sampleRequest?->bloodSample?->sample_code,
+                actionLabel: 'Track Collection',
+            )
+        );
 
         return back()->with(
             'success',

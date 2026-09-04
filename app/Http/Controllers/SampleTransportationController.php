@@ -7,6 +7,7 @@ use App\Models\CollectionCenter;
 use App\Models\Laboratory;
 use App\Models\SampleTransportation;
 use App\Models\User;
+use App\Notifications\PatientSampleUpdateNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class SampleTransportationController extends Controller
         }
 
      $query = SampleTransportation::with([
-    'bloodSample',
+    'bloodSample.sampleRequest.homeCollection',
     'collectionCenter',
     'laboratory',
     'transporter',
@@ -214,9 +215,28 @@ if ($alreadyExists) {
             'arrival_time' => now(),
         ]);
 
+        $transportation->loadMissing([
+            'laboratory',
+            'bloodSample.patient',
+            'bloodSample.sampleRequest',
+        ]);
+
+        $sample = $transportation->bloodSample;
+
+        $sample?->patient?->notify(
+            new PatientSampleUpdateNotification(
+                kind: 'sample_delivered_to_laboratory',
+                title: 'Sample delivered to laboratory',
+                message: 'Your sample was delivered safely to '.($transportation->laboratory?->name ?? 'the assigned laboratory').'.',
+                sampleRequestId: $sample?->sampleRequest?->id,
+                sampleCode: $sample?->sample_code,
+                actionLabel: 'Track Sample',
+            )
+        );
+
         return back()->with(
             'success',
-            'Sample delivered successfully.'
+            'Sample delivered successfully. The patient has been notified.'
         );
     }
 }

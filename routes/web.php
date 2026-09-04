@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdministrativeReportController;
 use App\Http\Controllers\BloodSampleReviewController;
 use App\Http\Controllers\DonorRequestController;
 use App\Http\Controllers\EmergencyPriorityController;
@@ -9,10 +10,12 @@ use App\Http\Controllers\HomeCollectionController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LaboratoryCapacityController;
 use App\Http\Controllers\PatientBloodSampleController;
+use App\Http\Controllers\PatientNotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceptionRequestController;
 use App\Http\Controllers\SampleHistoryController;
 use App\Http\Controllers\SampleRequestController;
+use App\Http\Controllers\SampleReportController;
 use App\Http\Controllers\SampleTransportationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +46,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
         ->name('admin.dashboard');
+
+    Route::get('/admin/reports', [AdministrativeReportController::class, 'index'])
+        ->name('admin.reports.index');
+    Route::post('/admin/reports', [AdministrativeReportController::class, 'store'])
+        ->name('admin.reports.store');
+    Route::get('/admin/reports/{administrativeReport}', [AdministrativeReportController::class, 'show'])
+        ->name('admin.reports.show');
 
     Route::get('/admin/emergency-priority', [EmergencyPriorityController::class, 'index'])
         ->name('admin.emergency-priority');
@@ -83,6 +93,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/admin/home-collections', [HomeCollectionController::class, 'adminIndex'])
         ->name('home-collections.admin.index');
+    Route::post('/admin/home-collections/route-order', [HomeCollectionController::class, 'updateRouteOrder'])
+        ->name('home-collections.route-order');
     Route::post('/admin/home-collections/{homeCollection}/assign', [HomeCollectionController::class, 'assignCollector'])
         ->name('home-collections.assign');
     Route::post('/admin/home-collections/{homeCollection}/send-to-laboratory', [HomeCollectionController::class, 'sendToLaboratory'])
@@ -90,6 +102,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/laboratory-capacity', [LaboratoryCapacityController::class, 'index'])
         ->name('laboratory-capacity.index');
+    Route::get('/laboratory-capacity/{laboratory}/workload', [LaboratoryCapacityController::class, 'workload'])
+        ->name('laboratory-capacity.workload');
+    Route::get('/laboratory-capacity/{laboratory}/samples/{sampleTransportation}/report', [SampleReportController::class, 'labEdit'])
+        ->name('laboratory-capacity.report.edit');
+    Route::put('/laboratory-capacity/{laboratory}/samples/{sampleTransportation}/report', [SampleReportController::class, 'labUpdate'])
+        ->name('laboratory-capacity.report.update');
     Route::patch('/laboratory-capacity/{laboratory}', [LaboratoryCapacityController::class, 'update'])
         ->name('laboratory-capacity.update');
 
@@ -104,6 +122,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/doctor/sample-requests', [SampleRequestController::class, 'doctorIndex'])
         ->name('sample-requests.doctor.index');
+    Route::get('/doctor/sample-requests/{sampleRequest}/report', [SampleReportController::class, 'edit'])
+        ->name('sample-reports.doctor.edit');
+    Route::put('/doctor/sample-requests/{sampleRequest}/report', [SampleReportController::class, 'update'])
+        ->name('sample-reports.doctor.update');
+    Route::post('/doctor/sample-requests/{sampleRequest}/report/generate-ai', [SampleReportController::class, 'generateAi'])
+        ->name('sample-reports.doctor.generate-ai');
+    Route::post('/doctor/sample-requests/{sampleRequest}/report/publish', [SampleReportController::class, 'publish'])
+        ->name('sample-reports.doctor.publish');
     Route::get('/doctor/sample-requests/{sampleRequest}', [SampleRequestController::class, 'doctorShow'])
         ->name('sample-requests.doctor.show');
 
@@ -135,6 +161,18 @@ Route::middleware(['auth'])->group(function () {
         ->name('patient.blood-samples.create');
     Route::post('/my-blood-samples/donate', [PatientBloodSampleController::class, 'store'])
         ->name('patient.blood-samples.store');
+    Route::get('/my-reports', [SampleReportController::class, 'patientIndex'])
+        ->name('sample-reports.patient.index');
+    Route::get('/my-notifications', [PatientNotificationController::class, 'index'])
+        ->name('patient.notifications.index');
+    Route::patch('/my-notifications/read-all', [PatientNotificationController::class, 'readAll'])
+        ->name('patient.notifications.read-all');
+    Route::patch('/my-notifications/{notification}/read', [PatientNotificationController::class, 'read'])
+        ->name('patient.notifications.read');
+    Route::get('/my-blood-samples/reports/{sampleReport}', [SampleReportController::class, 'patientShow'])
+        ->name('sample-reports.patient.show');
+    Route::get('/sample-reports/{sampleReport}/attachment', [SampleReportController::class, 'download'])
+        ->name('sample-reports.download');
 
     Route::get('/sos', [EmergencySOSController::class, 'index'])->name('sos.index');
     Route::post('/sos', [EmergencySOSController::class, 'store'])->name('sos.store');

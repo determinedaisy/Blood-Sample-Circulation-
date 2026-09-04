@@ -28,6 +28,8 @@ class PatientBloodSampleController extends Controller
             'collector',
             'reviewer',
             'sampleRequest',
+            'sampleReport.results',
+            'sampleReport.doctor',
             'transportations.transporter',
             'transportations.collectionCenter',
             'transportations.laboratory',

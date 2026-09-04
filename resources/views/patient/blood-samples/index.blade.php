@@ -720,6 +720,43 @@
 
                         @endif
 
+                        @if($sample->sampleReport?->status === 'published')
+
+                            <div class="review-box review-green" style="margin-top: 16px;">
+
+                                <div class="review-title">
+                                    Medical Report Available
+                                </div>
+
+                                <div class="review-text">
+                                    Your doctor has reviewed and published the laboratory report.
+                                </div>
+
+                                <a
+                                    href="{{ route('sample-reports.patient.show', $sample->sampleReport) }}"
+                                    class="inline-flex items-center mt-4 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
+                                >
+                                    View Medical Report
+                                </a>
+
+                            </div>
+
+                        @elseif($sample->sampleReport)
+
+                            <div class="review-box review-yellow" style="margin-top: 16px;">
+
+                                <div class="review-title">
+                                    Medical Report Being Prepared
+                                </div>
+
+                                <div class="review-text">
+                                    Your assigned doctor has not published the report yet.
+                                </div>
+
+                            </div>
+
+                        @endif
+
                     </div>
 
                 </div>

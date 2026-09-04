@@ -1,3 +1,22 @@
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    .patient-map-pin {
+        align-items: center;
+        background: #7c3aed;
+        border: 3px solid #fff;
+        border-radius: 9999px 9999px 9999px 0;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, .35);
+        color: #fff;
+        display: flex;
+        font-size: 16px;
+        height: 38px;
+        justify-content: center;
+        transform: rotate(-45deg);
+        width: 38px;
+    }
+    .patient-map-pin span { transform: rotate(45deg); }
+</style>
+
 <x-app-layout>
 
     <x-slot name="header">
@@ -18,7 +37,7 @@
 
     <div class="py-10 bg-gray-50 min-h-screen">
 
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
 
             @if($errors->any())
@@ -43,6 +62,7 @@
 
 
             <form
+                id="sample-request-form"
                 method="POST"
                 action="{{ route('sample-requests.store') }}"
                 class="space-y-6"
@@ -491,21 +511,21 @@
 
                         {{-- GPS --}}
 
-                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="overflow-hidden rounded-2xl border border-purple-200 bg-purple-50">
 
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div class="flex flex-col gap-3 border-b border-purple-200 p-4 sm:flex-row sm:items-center sm:justify-between">
 
                                 <div>
 
-                                    <div class="font-semibold text-gray-900">
-                                        📍 GPS Location
+                                    <div class="font-semibold text-purple-950">
+                                        📍 Exact GPS Location
                                     </div>
 
                                     <div
                                         id="location-status"
-                                        class="text-sm text-gray-500 mt-1"
+                                        class="text-sm text-purple-700 mt-1"
                                     >
-                                        Optional — helps the collector locate you.
+                                        Click the map to drop a pin, or use your current location.
                                     </div>
 
                                 </div>
@@ -514,11 +534,20 @@
                                 <button
                                     type="button"
                                     onclick="getCurrentLocation()"
-                                    class="inline-flex justify-center px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800"
+                                    id="current-location-button"
+                                    class="inline-flex justify-center rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-800"
                                 >
                                     Use Current Location
                                 </button>
 
+                            </div>
+
+                            <div class="bg-white p-3">
+                                <div id="request-location-map" class="h-[380px] w-full rounded-xl bg-gray-200"></div>
+                                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-500">
+                                    <span id="selected-coordinates">No map pin selected.</span>
+                                    <button type="button" id="clear-map-pin" class="hidden font-semibold text-purple-700 hover:text-purple-900">Clear pin</button>
+                                </div>
                             </div>
 
 
@@ -575,7 +604,82 @@
 
 
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+
+        let requestLocationMap = null;
+        let requestLocationMarker = null;
+
+        function mapPinIcon() {
+            return L.divIcon({
+                className: '',
+                html: '<div class="patient-map-pin"><span>●</span></div>',
+                iconSize: [38, 38],
+                iconAnchor: [19, 38]
+            });
+        }
+
+        function setMapLocation(latitude, longitude, accuracy = null) {
+            const lat = Number(latitude);
+            const lng = Number(longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+            document.getElementById('latitude').value = lat.toFixed(7);
+            document.getElementById('longitude').value = lng.toFixed(7);
+
+            if (!requestLocationMarker) {
+                requestLocationMarker = L.marker([lat, lng], {
+                    draggable: true,
+                    icon: mapPinIcon()
+                }).addTo(requestLocationMap);
+
+                requestLocationMarker.on('dragend', function () {
+                    const point = requestLocationMarker.getLatLng();
+                    setMapLocation(point.lat, point.lng);
+                });
+            } else {
+                requestLocationMarker.setLatLng([lat, lng]);
+            }
+
+            requestLocationMap.setView([lat, lng], 17);
+            document.getElementById('selected-coordinates').textContent =
+                'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+            document.getElementById('clear-map-pin').classList.remove('hidden');
+
+            const status = document.getElementById('location-status');
+            status.textContent = accuracy
+                ? '✓ GPS found (about ' + Math.round(accuracy) + ' metres accuracy). Drag the pin if needed.'
+                : '✓ Map pin selected. Drag it to your exact entrance.';
+        }
+
+        function initializeRequestMap() {
+            requestLocationMap = L.map('request-location-map').setView([23.8103, 90.4125], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(requestLocationMap);
+
+            requestLocationMap.on('click', function (event) {
+                setMapLocation(event.latlng.lat, event.latlng.lng);
+            });
+
+            const oldLatitude = document.getElementById('latitude').value;
+            const oldLongitude = document.getElementById('longitude').value;
+            if (oldLatitude && oldLongitude) setMapLocation(oldLatitude, oldLongitude);
+
+            document.getElementById('clear-map-pin').addEventListener('click', function () {
+                document.getElementById('latitude').value = '';
+                document.getElementById('longitude').value = '';
+                document.getElementById('selected-coordinates').textContent = 'No map pin selected.';
+                document.getElementById('location-status').textContent =
+                    'Click the map to drop a pin, or use your current location.';
+                this.classList.add('hidden');
+                if (requestLocationMarker) {
+                    requestLocationMap.removeLayer(requestLocationMarker);
+                    requestLocationMarker = null;
+                }
+            });
+        }
 
         function updateCollectionMethod() {
 
@@ -619,6 +723,10 @@
                 address.required = true;
                 preferredDate.required = true;
                 preferredTime.required = true;
+
+                window.setTimeout(function () {
+                    if (requestLocationMap) requestLocationMap.invalidateSize();
+                }, 100);
 
             } else {
 
@@ -666,27 +774,38 @@
                     document.getElementById('latitude').value =
                         position.coords.latitude;
 
-                    document.getElementById('longitude').value =
-                        position.coords.longitude;
-
-                    status.textContent =
-                        '✓ Current location saved successfully.';
+                    setMapLocation(
+                        position.coords.latitude,
+                        position.coords.longitude,
+                        position.coords.accuracy
+                    );
                 },
 
                 function() {
 
                     status.textContent =
-                        'Could not access your location. You can still submit using your address.';
+                        'Could not access GPS. Click your exact location on the map instead.';
                 }
 
             );
         }
 
 
-        document.addEventListener(
-            'DOMContentLoaded',
-            updateCollectionMethod
-        );
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeRequestMap();
+            updateCollectionMethod();
+
+            document.getElementById('sample-request-form').addEventListener('submit', function (event) {
+                const selected = document.querySelector('input[name="collection_method"]:checked');
+                if (selected?.value === 'home'
+                    && (!document.getElementById('latitude').value || !document.getElementById('longitude').value)) {
+                    event.preventDefault();
+                    document.getElementById('location-status').textContent =
+                        'Please click your home on the map or use your current GPS before submitting.';
+                    document.getElementById('request-location-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        });
 
     </script>
 
