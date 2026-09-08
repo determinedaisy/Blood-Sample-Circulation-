@@ -7,6 +7,9 @@ use App\Models\Laboratory;
 use App\Models\SampleTransportation;
 use App\Models\User;
 use App\Notifications\PatientSampleUpdateNotification;
+use App\Notifications\HomeCollectionAssignedNotification;
+use App\Notifications\LabStaffSampleAssignedNotification;
+use App\Notifications\SampleRequestDeclinedNotification;
 use App\Services\LaboratoryCapacityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,13 +38,14 @@ class HomeCollectionController extends Controller
         $homeCollections = HomeCollectionRequest::with([
             'patient',
             'assignedCollector',
-            'sampleRequest.assignedDoctor.doctorProfile',
+            'sampleRequest',
+            'sampleRequest.bloodSample',
+            'sampleRequest.bloodSample.assignedLabStaff',
             'sampleRequest.bloodSample.transportations.transporter',
             'sampleRequest.bloodSample.transportations.collectionCenter',
             'sampleRequest.bloodSample.transportations.laboratory',
         ])
-            ->orderBy('preferred_date')
-            ->orderBy('preferred_time')
+            ->orderByDesc('created_at')
             ->get();
 
         $collectors = User::where(
@@ -51,22 +55,17 @@ class HomeCollectionController extends Controller
             ->orderBy('name')
             ->get();
 
-        /*
-         * Laboratories are needed after a home
-         * sample has been collected.
-         */
-        $laboratories = Laboratory::where(
-            'is_active',
-            true
+        $labStaff = User::where(
+            'role',
+            'lab_staff'
         )
             ->orderBy('name')
             ->get();
 
-        $availableDoctors = User::where(
-            'role',
-            'doctor'
+        $laboratories = Laboratory::where(
+            'is_active',
+            true
         )
-            ->with('doctorProfile')
             ->orderBy('name')
             ->get();
 
@@ -75,16 +74,84 @@ class HomeCollectionController extends Controller
             compact(
                 'homeCollections',
                 'collectors',
-                'laboratories',
-                'availableDoctors'
+                'labStaff',
+                'laboratories'
             )
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN - APPROVE HOME COLLECTION REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    public function approve(
+        Request $request,
+        HomeCollectionRequest $homeCollection
+    ): RedirectResponse|JsonResponse {
+
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
+            abort(403);
+        }
+
+        $homeCollection->load('sampleRequest');
+
+        if (!$homeCollection->sampleRequest) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'No sample request is connected to this home collection.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'No sample request is connected to this home collection.'
+            );
+        }
+
+        if ($homeCollection->sampleRequest->status !== 'pending') {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'This sample request has already been processed.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'This sample request has already been processed.'
+            );
+        }
+
+        $homeCollection->sampleRequest->update([
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' =>
+                    'Sample request approved successfully. You can now assign a Sample Collector.',
+            ]);
+        }
+
+        return back()->with(
+            'success',
+            'Sample request approved successfully. You can now assign a Sample Collector.'
+        );
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN - ASSIGN HOME COLLECTOR
+    | ADMIN - ASSIGN SAMPLE COLLECTOR
     |--------------------------------------------------------------------------
     */
 
@@ -99,35 +166,77 @@ class HomeCollectionController extends Controller
         ) {
             abort(403);
         }
-$homeCollection->load('sampleRequest');
 
-if (
-    !$homeCollection->sampleRequest
-    || $homeCollection->sampleRequest->status !== 'approved'
-) {
-    if ($request->expectsJson()) {
-        return response()->json([
-            'message' => 'This sample request must be approved before a home collector can be assigned.',
-        ], 422);
-    }
+        $homeCollection->load('sampleRequest');
 
-    return back()->with(
-        'error',
-        'This sample request must be approved before a home collector can be assigned.'
-    );
-}
-        if ($homeCollection->status !== 'pending') {
+        if (!$homeCollection->sampleRequest) {
+
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Only pending home collection requests can be assigned.',
+                    'message' =>
+                        'No sample request is connected to this home collection.',
                 ], 422);
             }
 
             return back()->with(
                 'error',
-                'Only pending home collection requests can be assigned.'
+                'No sample request is connected to this home collection.'
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sample request must be approved
+        |--------------------------------------------------------------------------
+        */
+
+        if ($homeCollection->sampleRequest->status !== 'approved') {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'The sample request must be approved before assigning a Sample Collector.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'The sample request must be approved before assigning a Sample Collector.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Home collection must still be assignable
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !in_array(
+                $homeCollection->status,
+                ['pending', 'approved', 'assigned'],
+                true
+            )
+        ) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'Action cannot be done for this home collection in its current status.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'Action cannot be done for this home collection in its current status.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Sample Collector
+        |--------------------------------------------------------------------------
+        */
 
         $validated = $request->validate([
             'assigned_collector_id' => [
@@ -147,17 +256,25 @@ if (
             ->first();
 
         if (!$collector) {
+
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'The selected user is not a sample collector.',
+                    'message' =>
+                        'The selected user is not a Sample Collector.',
                 ], 422);
             }
 
             return back()->with(
                 'error',
-                'The selected user is not a sample collector.'
+                'The selected user is not a Sample Collector.'
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Assign Collector
+        |--------------------------------------------------------------------------
+        */
 
         $homeCollection->update([
             'assigned_collector_id' => $collector->id,
@@ -165,82 +282,273 @@ if (
             'assigned_at' => now(),
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Notify Collector
+        |--------------------------------------------------------------------------
+        */
+
+        $homeCollection->loadMissing([
+            'patient',
+            'sampleRequest.bloodSample',
+        ]);
+
+        $collector->notify(
+            new HomeCollectionAssignedNotification(
+                $homeCollection
+            )
+        );
+
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Home collection collector assigned successfully.',
-                'collector' => [
-                    'id' => $collector->id,
-                    'name' => $collector->name,
-                ],
-                'assigned_at' => $homeCollection->assigned_at?->format('d M Y, h:i A'),
+                'message' =>
+                    'Sample Collector '.$collector->name.' assigned successfully.',
             ]);
         }
 
         return back()->with(
             'success',
-            'Home collection collector assigned successfully.'
+            'Sample Collector '.$collector->name.' assigned successfully.'
         );
     }
 
-    public function updateRouteOrder(Request $request): JsonResponse
-    {
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN - DECLINE HOME COLLECTION REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    public function decline(
+        Request $request,
+        HomeCollectionRequest $homeCollection
+    ): RedirectResponse|JsonResponse {
+
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
+            abort(403);
+        }
+
+        $homeCollection->load([
+            'patient',
+            'sampleRequest',
+        ]);
+
+        if (!$homeCollection->sampleRequest) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'No sample request is connected to this home collection.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'No sample request is connected to this home collection.'
+            );
+        }
+
+        if ($homeCollection->sampleRequest->status !== 'pending') {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'This sample request has already been processed.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'This sample request has already been processed.'
+            );
+        }
+
+        $validated = $request->validate([
+            'decline_reason' => [
+                'required',
+                'string',
+                'min:3',
+                'max:1000',
+            ],
+        ]);
+
+        $sampleRequest = $homeCollection->sampleRequest;
+
+        $sampleRequest->status = 'declined';
+        $sampleRequest->decline_reason =
+            $validated['decline_reason'];
+
+        $sampleRequest->save();
+
+        $sampleRequest->load('bloodSample');
+
+        if ($homeCollection->patient) {
+            $homeCollection->patient->notify(
+                new SampleRequestDeclinedNotification(
+                    $sampleRequest
+                )
+            );
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' =>
+                    'Sample request declined successfully. The patient has been notified.',
+            ]);
+        }
+
+        return back()->with(
+            'success',
+            'Sample request declined successfully. The patient has been notified.'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN - UPDATE ROUTE ORDER
+    |--------------------------------------------------------------------------
+    */
+
+    public function updateRouteOrder(
+        Request $request
+    ): JsonResponse {
+
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
             abort(403);
         }
 
         $validated = $request->validate([
-            'route_date' => ['required', 'date'],
-            'collector_id' => ['required', 'integer', 'exists:users,id'],
-            'ordered_ids' => ['required', 'array', 'min:1'],
-            'ordered_ids.*' => ['required', 'integer', 'distinct', 'exists:home_collection_requests,id'],
+            'route_date' => [
+                'required',
+                'date',
+            ],
+
+            'collector_id' => [
+                'required',
+                'integer',
+                'exists:users,id',
+            ],
+
+            'ordered_ids' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'ordered_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:home_collection_requests,id',
+            ],
         ]);
 
-        $collector = User::where('id', $validated['collector_id'])
-            ->where('role', 'sample_collector')
+        $collector = User::where(
+            'id',
+            $validated['collector_id']
+        )
+            ->where(
+                'role',
+                'sample_collector'
+            )
             ->first();
 
         if (!$collector) {
             throw ValidationException::withMessages([
-                'collector_id' => 'The selected user is not a sample collector.',
+                'collector_id' =>
+                    'The selected user is not a Sample Collector.',
             ]);
         }
 
-        $orderedIds = collect($validated['ordered_ids'])->map(fn ($id) => (int) $id)->values();
+        $orderedIds = collect(
+            $validated['ordered_ids']
+        )
+            ->map(
+                fn ($id) => (int) $id
+            )
+            ->values();
+
         $matchingCount = HomeCollectionRequest::query()
-            ->whereIn('id', $orderedIds)
-            ->where('assigned_collector_id', $collector->id)
-            ->whereDate('preferred_date', $validated['route_date'])
+            ->whereIn(
+                'id',
+                $orderedIds
+            )
+            ->where(
+                'assigned_collector_id',
+                $collector->id
+            )
+            ->whereDate(
+                'preferred_date',
+                $validated['route_date']
+            )
             ->count();
 
-        if ($matchingCount !== $orderedIds->count()) {
+        if (
+            $matchingCount
+            !== $orderedIds->count()
+        ) {
             throw ValidationException::withMessages([
-                'ordered_ids' => 'Every stop must belong to the selected collector and route date.',
+                'ordered_ids' =>
+                    'Every stop must belong to the selected collector and route date.',
             ]);
         }
 
-        DB::transaction(function () use ($validated, $collector, $orderedIds): void {
-            DB::table('home_collection_requests')
-                ->where('assigned_collector_id', $collector->id)
-                ->whereDate('preferred_date', $validated['route_date'])
-                ->update(['route_order' => null]);
+        DB::transaction(
+            function () use (
+                $validated,
+                $collector,
+                $orderedIds
+            ): void {
 
-            foreach ($orderedIds as $index => $homeCollectionId) {
-                DB::table('home_collection_requests')
-                    ->where('id', $homeCollectionId)
-                    ->update(['route_order' => $index + 1]);
+                DB::table(
+                    'home_collection_requests'
+                )
+                    ->where(
+                        'assigned_collector_id',
+                        $collector->id
+                    )
+                    ->whereDate(
+                        'preferred_date',
+                        $validated['route_date']
+                    )
+                    ->update([
+                        'route_order' => null,
+                    ]);
+
+                foreach (
+                    $orderedIds as $index => $homeCollectionId
+                ) {
+                    DB::table(
+                        'home_collection_requests'
+                    )
+                        ->where(
+                            'id',
+                            $homeCollectionId
+                        )
+                        ->update([
+                            'route_order' => $index + 1,
+                        ]);
+                }
             }
-        });
+        );
 
         return response()->json([
-            'message' => 'Daily collection route saved successfully.',
-            'stop_count' => $orderedIds->count(),
+            'message' =>
+                'Daily collection route saved successfully.',
+
+            'stop_count' =>
+                $orderedIds->count(),
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
-    | ADMIN - SEND HOME SAMPLE TO LABORATORY
+    | ADMIN - OLD LABORATORY TRANSPORTATION
     |--------------------------------------------------------------------------
     */
 
@@ -257,9 +565,6 @@ if (
             abort(403);
         }
 
-        /*
-         * The linked sample request must still be approved.
-         */
         $homeCollection->load('sampleRequest');
 
         if (
@@ -272,9 +577,6 @@ if (
             );
         }
 
-        /*
-         * Blood must actually have been collected.
-         */
         if ($homeCollection->status !== 'collected') {
             return back()->with(
                 'error',
@@ -287,6 +589,7 @@ if (
                 'required',
                 'exists:laboratories,id',
             ],
+
             'scheduled_test_date' => [
                 'required',
                 'date',
@@ -294,9 +597,6 @@ if (
             ],
         ]);
 
-        /*
-         * Only active laboratories can be selected.
-         */
         $laboratory = Laboratory::where(
             'id',
             $validated['laboratory_id']
@@ -314,10 +614,6 @@ if (
             );
         }
 
-        /*
-         * Load the SAME BloodSample that was
-         * collected from the patient's home.
-         */
         $homeCollection->load(
             'sampleRequest.bloodSample'
         );
@@ -334,9 +630,6 @@ if (
             );
         }
 
-        /*
-         * Prevent duplicate transportation records.
-         */
         $alreadyExists = SampleTransportation::where(
             'blood_sample_id',
             $bloodSample->id
@@ -356,32 +649,27 @@ if (
             );
         }
 
-        /*
-         * Create transportation using the existing
-         * transportation system.
-         *
-         * collection_center_id = NULL means:
-         * origin = patient's home.
-         */
         $capacityService->schedule([
-            'blood_sample_id' => $bloodSample->id,
+            'blood_sample_id' =>
+                $bloodSample->id,
 
-            'collection_center_id' => null,
+            'collection_center_id' =>
+                null,
 
-            'laboratory_id' => $laboratory->id,
+            'laboratory_id' =>
+                $laboratory->id,
 
-            /*
-             * For now the home collector is also
-             * responsible for carrying the sample
-             * to the laboratory.
-             */
             'transported_by' =>
                 $homeCollection->assigned_collector_id,
 
-            'status' => 'pending',
+            'status' =>
+                'pending',
 
-            'departure_time' => null,
-            'arrival_time' => null,
+            'departure_time' =>
+                null,
+
+            'arrival_time' =>
+                null,
 
             'notes' =>
                 'Home collection sample - transport from patient home to laboratory.',
@@ -389,10 +677,140 @@ if (
 
         return back()->with(
             'success',
-            'Sample sent to transportation queue and a testing slot was reserved at '.$laboratory->name.'.'
+            'Legacy laboratory transportation record created successfully.'
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN - ASSIGN LAB STAFF
+    |--------------------------------------------------------------------------
+    */
+
+    public function assignLabStaff(
+        Request $request,
+        HomeCollectionRequest $homeCollection
+    ): RedirectResponse|JsonResponse {
+
+        if (
+            !Auth::check()
+            || Auth::user()->role !== 'admin'
+        ) {
+            abort(403);
+        }
+
+        $homeCollection->load(
+            'sampleRequest.bloodSample'
+        );
+
+        if ($homeCollection->status !== 'collected') {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'Lab Staff can only be assigned after the Sample Collector has collected the sample.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'Lab Staff can only be assigned after the Sample Collector has collected the sample.'
+            );
+        }
+
+        $bloodSample =
+            $homeCollection
+                ->sampleRequest
+                ?->bloodSample;
+
+        if (!$bloodSample) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'No Blood Sample is connected to this home collection request.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'No Blood Sample is connected to this home collection request.'
+            );
+        }
+
+        if (
+            $bloodSample->status === 'accepted'
+            || $bloodSample->status === 'rejected'
+        ) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'This Blood Sample has already been examined.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'This Blood Sample has already been examined.'
+            );
+        }
+
+        $validated = $request->validate([
+            'assigned_lab_staff_id' => [
+                'required',
+                'exists:users,id',
+            ],
+        ]);
+
+        $labStaff = User::where(
+            'id',
+            $validated['assigned_lab_staff_id']
+        )
+            ->where(
+                'role',
+                'lab_staff'
+            )
+            ->first();
+
+        if (!$labStaff) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' =>
+                        'The selected user is not a Lab Staff member.',
+                ], 422);
+            }
+
+            return back()->with(
+                'error',
+                'The selected user is not a Lab Staff member.'
+            );
+        }
+
+        $bloodSample->update([
+            'assigned_lab_staff_id' =>
+                $labStaff->id,
+        ]);
+
+        $labStaff->notify(
+            new LabStaffSampleAssignedNotification(
+                $bloodSample
+            )
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' =>
+                    'Lab Staff '.$labStaff->name.' assigned successfully. The sample is now waiting for examination.',
+            ]);
+        }
+
+        return back()->with(
+            'success',
+            'Lab Staff '.$labStaff->name.' assigned successfully. The sample is now waiting for examination.'
+        );
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -412,6 +830,7 @@ if (
         $homeCollections = HomeCollectionRequest::with([
             'patient',
             'sampleRequest',
+            'sampleRequest.bloodSample.assignedLabStaff',
             'sampleRequest.bloodSample.transportations.laboratory',
             'sampleRequest.bloodSample.transportations.transporter',
         ])
@@ -420,7 +839,9 @@ if (
                 Auth::id()
             )
             ->orderBy('preferred_date')
-            ->orderByRaw('CASE WHEN route_order IS NULL THEN 1 ELSE 0 END')
+            ->orderByRaw(
+                'CASE WHEN route_order IS NULL THEN 1 ELSE 0 END'
+            )
             ->orderBy('route_order')
             ->orderBy('preferred_time')
             ->get();
@@ -430,7 +851,6 @@ if (
             compact('homeCollections')
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -442,7 +862,9 @@ if (
         HomeCollectionRequest $homeCollection
     ): RedirectResponse {
 
-        $this->authorizeCollector($homeCollection);
+        $this->authorizeCollector(
+            $homeCollection
+        );
 
         if ($homeCollection->status !== 'assigned') {
             return back()->with(
@@ -465,11 +887,29 @@ if (
         $homeCollection->patient?->notify(
             new PatientSampleUpdateNotification(
                 kind: 'home_collector_on_the_way',
+
                 title: 'Collector is on the way',
-                message: ($homeCollection->assignedCollector?->name ?? 'Your assigned collector').' is travelling to your home for the scheduled sample collection.',
-                sampleRequestId: $homeCollection->sample_request_id,
-                sampleCode: $homeCollection->sampleRequest?->bloodSample?->sample_code,
-                actionLabel: 'Track Collection',
+
+                message:
+                    (
+                        $homeCollection
+                            ->assignedCollector
+                            ?->name
+                        ?? 'Your assigned collector'
+                    )
+                    .' is travelling to your home for the scheduled sample collection.',
+
+                sampleRequestId:
+                    $homeCollection->sample_request_id,
+
+                sampleCode:
+                    $homeCollection
+                        ->sampleRequest
+                        ?->bloodSample
+                        ?->sample_code,
+
+                actionLabel:
+                    'Track Collection',
             )
         );
 
@@ -478,7 +918,6 @@ if (
             'Trip started successfully. The patient can now see that you are on the way.'
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -490,7 +929,9 @@ if (
         HomeCollectionRequest $homeCollection
     ): RedirectResponse {
 
-        $this->authorizeCollector($homeCollection);
+        $this->authorizeCollector(
+            $homeCollection
+        );
 
         if ($homeCollection->status !== 'on_the_way') {
             return back()->with(
@@ -513,11 +954,29 @@ if (
         $homeCollection->patient?->notify(
             new PatientSampleUpdateNotification(
                 kind: 'home_collector_arrived',
+
                 title: 'Collector has arrived',
-                message: ($homeCollection->assignedCollector?->name ?? 'Your assigned collector').' has arrived for your home sample collection.',
-                sampleRequestId: $homeCollection->sample_request_id,
-                sampleCode: $homeCollection->sampleRequest?->bloodSample?->sample_code,
-                actionLabel: 'Track Collection',
+
+                message:
+                    (
+                        $homeCollection
+                            ->assignedCollector
+                            ?->name
+                        ?? 'Your assigned collector'
+                    )
+                    .' has arrived for your home sample collection.',
+
+                sampleRequestId:
+                    $homeCollection->sample_request_id,
+
+                sampleCode:
+                    $homeCollection
+                        ->sampleRequest
+                        ?->bloodSample
+                        ?->sample_code,
+
+                actionLabel:
+                    'Track Collection',
             )
         );
 
@@ -526,7 +985,6 @@ if (
             'Arrival confirmed successfully.'
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -538,7 +996,9 @@ if (
         HomeCollectionRequest $homeCollection
     ): RedirectResponse {
 
-        $this->authorizeCollector($homeCollection);
+        $this->authorizeCollector(
+            $homeCollection
+        );
 
         if ($homeCollection->status !== 'arrived') {
             return back()->with(
@@ -559,21 +1019,15 @@ if (
         if (!$bloodSample) {
             return back()->with(
                 'error',
-                'No blood sample is connected to this home collection request.'
+                'No Blood Sample is connected to this home collection request.'
             );
         }
 
-        /*
-         * Complete the home collection.
-         */
         $homeCollection->update([
             'status' => 'collected',
             'collected_at' => now(),
         ]);
 
-        /*
-         * Update the SAME BloodSample.
-         */
         $bloodSample->update([
             'collected_by' => Auth::id(),
             'collected_at' => now(),
@@ -581,14 +1035,13 @@ if (
 
         return back()->with(
             'success',
-            'Blood sample collected successfully. It is now waiting for laboratory transportation.'
+            'Blood Sample collected successfully. Admin can now assign Lab Staff.'
         );
     }
 
-
     /*
     |--------------------------------------------------------------------------
-    | PRIVATE AUTHORIZATION HELPER
+    | PRIVATE - AUTHORIZE SAMPLE COLLECTOR
     |--------------------------------------------------------------------------
     */
 
@@ -603,10 +1056,6 @@ if (
             abort(403);
         }
 
-        /*
-         * A collector may modify ONLY their
-         * own assigned home collection.
-         */
         if (
             (int) $homeCollection->assigned_collector_id
             !==

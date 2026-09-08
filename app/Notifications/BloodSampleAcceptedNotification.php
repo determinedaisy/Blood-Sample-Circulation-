@@ -2,53 +2,54 @@
 
 namespace App\Notifications;
 
-use App\Models\BloodSample;
+use App\Models\DonorRequest;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class BloodSampleAcceptedNotification extends Notification
+class BloodDonationRequestNotification extends Notification
 {
     use Queueable;
 
     public function __construct(
-        public BloodSample $bloodSample
+        public DonorRequest $donorRequest
     ) {
     }
 
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
         return ['database'];
     }
 
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
-        $donor = $this->bloodSample->donor;
+        $patientName =
+            $this->donorRequest
+                ->patient
+                ->user
+                ->name
+                ?? 'A patient';
 
         return [
-            'title' => 'Blood Donation Accepted',
+            'type' => 'emergency_blood_request',
+
+            'title' =>
+                'Emergency Blood Request',
 
             'message' =>
-                'Your blood sample '
-                . $this->bloodSample->sample_code
-                . ' has been accepted.',
+                $patientName .
+                ' has requested your blood donation.',
 
-            'sample_code' =>
-                $this->bloodSample->sample_code,
+            'donor_request_id' =>
+                $this->donorRequest->id,
 
-            'donation_count' =>
-                $donor?->donation_count ?? 0,
+            'emergency_request_id' =>
+                $this->donorRequest
+                    ->emergency_request_id,
 
-            'donor_badge' =>
-                $donor?->donor_badge ?? 'none',
-
-            'badge_name' =>
-                $donor?->badge_name ?? 'No Badge',
-
-            'shop_discount' =>
-                $donor?->shop_discount ?? 0,
-
-            'reviewed_at' =>
-                $this->bloodSample->reviewed_at?->toDateTimeString(),
+            'patient_id' =>
+                $this->donorRequest->patient_id,
         ];
     }
 }

@@ -21,8 +21,8 @@ use App\Http\Controllers\PharmacyOrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceptionRequestController;
 use App\Http\Controllers\SampleHistoryController;
-use App\Http\Controllers\SampleRequestController;
 use App\Http\Controllers\SampleReportController;
+use App\Http\Controllers\SampleRequestController;
 use App\Http\Controllers\SampleTransportationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -42,15 +42,25 @@ Route::get('/sample/card/{sample_code}', function ($sample_code) {
 Route::get('/sample-history/{sample_code}', [SampleHistoryController::class, 'show'])
     ->name('sample.history');
 
+
 Route::middleware(['auth'])->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/dashboard', function () {
+
         if (Auth::user()->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
 
         return view('dashboard');
+
     })->middleware('verified')->name('dashboard');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -79,6 +89,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/admin/emergency-priority/{emergencyRequest}', [EmergencyPriorityController::class, 'update'])
         ->name('admin.emergency-priority.update');
 
+
     /*
     |--------------------------------------------------------------------------
     | Sample Requests
@@ -103,6 +114,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/sample-requests/{sampleRequest}/home-collection', [SampleRequestController::class, 'homeCollectionStore'])
         ->name('sample-requests.home-collection.store');
 
+
     /*
     |--------------------------------------------------------------------------
     | Receptionist Sample Requests
@@ -117,6 +129,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/receptionist/sample-requests', [SampleRequestController::class, 'receptionistStore'])
         ->name('sample-requests.receptionist.store');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -139,23 +152,54 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/sample-requests/{sampleRequest}/assign-doctor', [SampleRequestController::class, 'assignDoctor'])
         ->name('sample-requests.assign-doctor');
 
+
     /*
     |--------------------------------------------------------------------------
     | Home Collections
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/admin/home-collections', [HomeCollectionController::class, 'adminIndex'])
-        ->name('home-collections.admin.index');
+    Route::get(
+        '/admin/home-collections',
+        [HomeCollectionController::class, 'adminIndex']
+    )->name('home-collections.admin.index');
 
-    Route::post('/admin/home-collections/route-order', [HomeCollectionController::class, 'updateRouteOrder'])
-        ->name('home-collections.route-order');
+    Route::patch(
+        '/admin/home-collections/{homeCollection}/approve',
+        [HomeCollectionController::class, 'approve']
+    )->name('home-collections.approve');
 
-    Route::post('/admin/home-collections/{homeCollection}/assign', [HomeCollectionController::class, 'assignCollector'])
-        ->name('home-collections.assign');
+    Route::patch(
+        '/admin/home-collections/{homeCollection}/decline',
+        [HomeCollectionController::class, 'decline']
+    )->name('home-collections.decline');
 
-    Route::post('/admin/home-collections/{homeCollection}/send-to-laboratory', [HomeCollectionController::class, 'sendToLaboratory'])
-        ->name('home-collections.send-to-laboratory');
+    Route::post(
+        '/admin/home-collections/{homeCollection}/assign',
+        [HomeCollectionController::class, 'assignCollector']
+    )->name('home-collections.assign');
+
+    Route::post(
+        '/admin/home-collections/route-order',
+        [HomeCollectionController::class, 'updateRouteOrder']
+    )->name('home-collections.route-order');
+
+    Route::post(
+        '/admin/home-collections/{homeCollection}/assign-lab-staff',
+        [HomeCollectionController::class, 'assignLabStaff']
+    )->name('home-collections.assign-lab-staff');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Legacy Transportation Route
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/admin/home-collections/{homeCollection}/send-to-laboratory',
+        [HomeCollectionController::class, 'sendToLaboratory']
+    )->name('home-collections.send-to-laboratory');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -178,6 +222,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/laboratory-capacity/{laboratory}', [LaboratoryCapacityController::class, 'update'])
         ->name('laboratory-capacity.update');
 
+
     /*
     |--------------------------------------------------------------------------
     | Collector
@@ -195,6 +240,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/collector/home-collections/{homeCollection}/collect', [HomeCollectionController::class, 'markCollected'])
         ->name('home-collections.collector.collect');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -220,6 +266,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/doctor/sample-requests/{sampleRequest}', [SampleRequestController::class, 'doctorShow'])
         ->name('sample-requests.doctor.show');
 
+
     /*
     |--------------------------------------------------------------------------
     | Reception Requests
@@ -241,6 +288,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/receptionist/reception-requests/{receptionRequest}/process', [ReceptionRequestController::class, 'process'])
         ->name('reception-requests.process');
 
+
     /*
     |--------------------------------------------------------------------------
     | Blood Samples
@@ -252,6 +300,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/blood-samples/{bloodSample}/review', [BloodSampleReviewController::class, 'update'])
         ->name('blood-samples.review');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -270,6 +319,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/inventory/{bloodSample}/collect', [InventoryController::class, 'collect'])
         ->name('inventory.collect');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -304,23 +354,92 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sample-reports/{sampleReport}/attachment', [SampleReportController::class, 'download'])
         ->name('sample-reports.download');
 
+
     /*
     |--------------------------------------------------------------------------
     | Emergency SOS
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/sos', [EmergencySOSController::class, 'index'])
-        ->name('sos.index');
+    Route::get(
+        '/sos',
+        [EmergencySOSController::class, 'index']
+    )->name('sos.index');
 
-    Route::post('/sos', [EmergencySOSController::class, 'store'])
-        ->name('sos.store');
+    Route::post(
+        '/sos',
+        [EmergencySOSController::class, 'store']
+    )->name('sos.store');
 
-    Route::get('/sos/results', [EmergencySOSController::class, 'results'])
-        ->name('sos.results');
+    Route::get(
+        '/sos/results',
+        [EmergencySOSController::class, 'results']
+    )->name('sos.results');
 
-    Route::post('/donor-request/{donor}', [DonorRequestController::class, 'store'])
-        ->name('donor.request');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Patient -> Donor Blood Request
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/donor-request/{donor}',
+        [DonorRequestController::class, 'store']
+    )->name('donor.request');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Donor Emergency Blood Requests
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/donor-requests',
+        [DonorRequestController::class, 'incoming']
+    )->name('donor.requests');
+
+    Route::post(
+        '/donor-request/{id}/accept',
+        [DonorRequestController::class, 'accept']
+    )->name('donor.request.accept');
+
+    Route::post(
+        '/donor-request/{id}/decline',
+        [DonorRequestController::class, 'decline']
+    )->name('donor.request.decline');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Emergency Blood Tracking
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/donor-request/{id}/track',
+        [DonorRequestController::class, 'track']
+    )->name('donor.request.track');
+
+    /*
+     * IMPORTANT:
+     * The donor tracking Blade view calls:
+     *
+     * route('donor.request.update-location', $donorRequest->id)
+     *
+     * Therefore the route name must match exactly.
+     */
+    Route::post(
+        '/donor-request/{id}/location',
+        [DonorRequestController::class, 'updateLocation']
+    )->name('donor.request.update-location');
+
+    Route::post(
+        '/donor-request/{id}/complete',
+        [DonorRequestController::class, 'complete']
+    )->name('donor.request.complete');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -339,6 +458,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/transportation/{transportation}/deliver', [SampleTransportationController::class, 'deliver'])
         ->name('transportation.deliver');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -367,14 +487,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/equipment/orders', [EquipmentOrderController::class, 'store'])
         ->name('equipment.order.store');
 
-    Route::get('/equipment/orders/{order}/success', [EquipmentOrderController::class, 'success'])
-        ->name('equipment.order.success');
-
     Route::get('/equipment/orders', [EquipmentOrderController::class, 'orders'])
         ->name('equipment.orders');
 
     Route::get('/equipment/orders/{order}', [EquipmentOrderController::class, 'show'])
         ->name('equipment.order.show');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -406,14 +524,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pharmacy/orders', [PharmacyOrderController::class, 'orders'])
         ->name('pharmacy.orders');
 
-    Route::get('/pharmacy/orders/{order}', [PharmacyOrderController::class, 'show'])
-        ->name('pharmacy.orders.show');
-
     Route::get('/doctor/pharmacy/orders', [PharmacyOrderController::class, 'doctorOrders'])
         ->name('pharmacy.doctor.orders');
 
     Route::patch('/doctor/pharmacy/orders/{order}/accept', [PharmacyOrderController::class, 'accept'])
         ->name('pharmacy.doctor.orders.accept');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -421,11 +537,16 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/payment/bkash/initiate/{sample_code}', [\App\Http\Controllers\PaymentController::class, 'initiate'])
-        ->name('payment.bkash.initiate');
+    Route::get(
+        '/payment/bkash/initiate/{sample_code}',
+        [\App\Http\Controllers\PaymentController::class, 'initiate']
+    )->name('payment.bkash.initiate');
 
-    Route::get('/payment/bkash/callback', [\App\Http\Controllers\PaymentController::class, 'callback'])
-        ->name('bkash.callback');
+    Route::get(
+        '/payment/bkash/callback',
+        [\App\Http\Controllers\PaymentController::class, 'callback']
+    )->name('bkash.callback');
+
 
     /*
     |--------------------------------------------------------------------------
@@ -456,6 +577,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::delete('/forum/comments/{comment}', [ForumController::class, 'destroyComment'])
         ->name('forum.comments.destroy');
+
 
     /*
     |--------------------------------------------------------------------------

@@ -9,9 +9,7 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // Only admin should access Feature 5.
-        // If your project already has admin/role middleware,
-        // this check can later be handled by that middleware.
+        // Only admin should access the dashboard.
         abort_unless(
             auth()->check() && auth()->user()->role === 'admin',
             403
@@ -51,11 +49,50 @@ class AdminDashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Last 7 days
+        | Daily sample data
+        |--------------------------------------------------------------------------
+        | We prepare BOTH 7-day and 30-day datasets.
+        | The frontend toggle decides which one to display.
         |--------------------------------------------------------------------------
         */
 
-        $dailyRaw = BloodSample::query()
+        /*
+        |------------------------------
+        | Last 30 days
+        |------------------------------
+        */
+
+        $dailyRaw30 = BloodSample::query()
+            ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+            ->whereDate(
+                'created_at',
+                '>=',
+                now()->subDays(29)->toDateString()
+            )
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('total', 'day');
+
+        $dailyLabels30 = [];
+        $dailyValues30 = [];
+
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+
+            $dateKey = $date->toDateString();
+
+            $dailyLabels30[] = $date->format('d M');
+            $dailyValues30[] = (int) ($dailyRaw30[$dateKey] ?? 0);
+        }
+
+
+        /*
+        |------------------------------
+        | Last 7 days
+        |------------------------------
+        */
+
+        $dailyRaw7 = BloodSample::query()
             ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
             ->whereDate(
                 'created_at',
@@ -66,16 +103,16 @@ class AdminDashboardController extends Controller
             ->orderBy('day')
             ->pluck('total', 'day');
 
-        $dailyLabels = [];
-        $dailyValues = [];
+        $dailyLabels7 = [];
+        $dailyValues7 = [];
 
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
 
             $dateKey = $date->toDateString();
 
-            $dailyLabels[] = $date->format('D');
-            $dailyValues[] = (int) ($dailyRaw[$dateKey] ?? 0);
+            $dailyLabels7[] = $date->format('d M');
+            $dailyValues7[] = (int) ($dailyRaw7[$dateKey] ?? 0);
         }
 
         /*
@@ -88,19 +125,34 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Send everything to dashboard
+        |--------------------------------------------------------------------------
+        */
+
         return view('admin.dashboard', compact(
             'totalSamples',
             'acceptedSamples',
             'rejectedSamples',
             'acceptanceRate',
             'rejectionRate',
-            'dailyLabels',
-            'dailyValues',
+
+            // 7-day graph data
+            'dailyLabels7',
+            'dailyValues7',
+
+            // 30-day graph data
+            'dailyLabels30',
+            'dailyValues30',
+
+            // Recent samples
             'recentSamples'
         ));
     }
 
-    /*
+
+       /*
     |--------------------------------------------------------------------------
     | AI Blood Analysis Feature
     |--------------------------------------------------------------------------
