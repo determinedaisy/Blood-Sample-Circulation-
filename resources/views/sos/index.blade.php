@@ -21,9 +21,18 @@
                     🚨 Emergency Blood SOS
                 </h1>
 
-                <p class="text-lg mb-8">
-                    Press the button to find nearby compatible blood donors.
+
+                <p class="text-lg mb-3">
+                    Request the blood group you need and find compatible
+                    donors within 2 km.
                 </p>
+
+
+                <p class="text-sm text-gray-400 mb-8">
+                    Only verified, willing, available, and medically
+                    compatible donors within 2 km will be shown.
+                </p>
+
 
                 <form
                     id="sosForm"
@@ -33,32 +42,144 @@
 
                     @csrf
 
+
+                    <!--
+                    |--------------------------------------------------------------------------
+                    | REQUESTED BLOOD GROUP
+                    |--------------------------------------------------------------------------
+                    -->
+
+                    <div class="max-w-md mx-auto mb-8 text-left">
+
+                        <label
+                            for="blood_group"
+                            class="block text-lg font-semibold mb-3 text-gray-100"
+                        >
+                            Select Required Blood Group
+                        </label>
+
+
+                        <select
+                            name="blood_group"
+                            id="blood_group"
+                            required
+                            class="w-full
+                                   rounded-xl
+                                   border-gray-600
+                                   bg-gray-700
+                                   text-white
+                                   px-4
+                                   py-3
+                                   text-lg
+                                   focus:border-red-500
+                                   focus:ring-red-500"
+                        >
+
+                            <option value="">
+                                -- Select Blood Group --
+                            </option>
+
+                            <option value="A+">
+                                A+
+                            </option>
+
+                            <option value="A-">
+                                A-
+                            </option>
+
+                            <option value="B+">
+                                B+
+                            </option>
+
+                            <option value="B-">
+                                B-
+                            </option>
+
+                            <option value="AB+">
+                                AB+
+                            </option>
+
+                            <option value="AB-">
+                                AB-
+                            </option>
+
+                            <option value="O+">
+                                O+
+                            </option>
+
+                            <option value="O-">
+                                O-
+                            </option>
+
+                        </select>
+
+
+                        @error('blood_group')
+
+                            <p class="mt-2 text-sm text-red-400">
+                                {{ $message }}
+                            </p>
+
+                        @enderror
+
+                    </div>
+
+
+                    <!--
+                    |--------------------------------------------------------------------------
+                    | TEST LOCATION
+                    |--------------------------------------------------------------------------
+                    |
+                    | This is the same location used in DonorSeeder.php.
+                    |
+                    | Latitude:  23.8103
+                    | Longitude: 90.4125
+                    |
+                    | The backend STILL enforces the maximum 2 km distance.
+                    |
+                    -->
+
                     <input
                         type="hidden"
                         name="latitude"
                         id="latitude"
+                        value="23.8103"
                     >
+
 
                     <input
                         type="hidden"
                         name="longitude"
                         id="longitude"
+                        value="90.4125"
                     >
 
+
                     <button
-                        type="button"
-                        onclick="getLocation()"
+                        type="submit"
+                        id="sosButton"
                         class="bg-red-600 hover:bg-red-700
                                text-white font-bold
                                py-4 px-10
                                rounded-full
                                text-xl
-                               shadow-lg"
+                               shadow-lg
+                               transition
+                               duration-200"
                     >
 
-                        🚨 SEND SOS
+                        🚨 SEND SOS REQUEST
 
                     </button>
+
+
+                    <p
+                        id="locationStatus"
+                        class="mt-6 text-sm text-gray-400"
+                    >
+                        Select the blood group you need and send the SOS request.
+                    </p>
+
 
                 </form>
 
@@ -73,44 +194,45 @@
 
 <script>
 
-function getLocation(){
+    document
+        .getElementById('sosForm')
+        .addEventListener('submit', function (event) {
 
-    console.log("SOS clicked");
+            const bloodGroup =
+                document.getElementById('blood_group').value;
 
-    if (!navigator.geolocation){
+            const button =
+                document.getElementById('sosButton');
 
-        alert("GPS is not supported");
-        return;
+            const status =
+                document.getElementById('locationStatus');
 
-    }
 
-    navigator.geolocation.getCurrentPosition(
+            if (!bloodGroup) {
 
-        function(position){
+                event.preventDefault();
 
-            console.log("Location received");
+                alert(
+                    'Please select the blood group you need.'
+                );
 
-            document.getElementById('latitude').value =
-                position.coords.latitude;
+                return;
 
-            document.getElementById('longitude').value =
-                position.coords.longitude;
+            }
 
-            document.getElementById('sosForm').submit();
 
-        },
+            button.disabled = true;
 
-        function(error){
+            button.innerText =
+                "🚨 SEARCHING FOR DONORS...";
 
-            console.log(error);
 
-            alert("Please allow location access");
+            status.innerText =
+                "Searching for compatible " +
+                bloodGroup +
+                " blood donors within 2 km...";
 
-        }
-
-    );
-
-}
+        });
 
 </script>
 

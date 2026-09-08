@@ -7,7 +7,7 @@
     </x-slot>
 
 
-    <div class="py-12">
+    <div class="py-12 min-h-screen bg-gray-50">
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
@@ -230,6 +230,18 @@
                                     Delivered
                                 </span>
 
+                            @elseif($overallStatus === 'declined')
+
+                                <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold">
+                                    Declined
+                                </span>
+
+                            @elseif($overallStatus === 'approved')
+
+                                <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold">
+                                    Approved
+                                </span>
+
                             @else
 
                                 <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">
@@ -244,176 +256,268 @@
 
 
                     {{-- ================================================= --}}
-                    {{-- REVIEW FORM --}}
+                    {{-- LAB STAFF EXAMINATION --}}
                     {{-- ================================================= --}}
 
-                    @if(
-                        $sample->status !== 'accepted'
-                        && $sample->status !== 'rejected'
-                    )
+                    @if(auth()->user()->role === 'lab_staff')
 
-                        <form
-                            method="POST"
-                            action="{{ route('blood-samples.review', $sample) }}"
-                            class="mt-6 border-t pt-5"
-                        >
+                        @if(
+                            $overallStatus !== 'declined'
+                            && $sample->status !== 'accepted'
+                            && $sample->status !== 'rejected'
+                        )
 
-                            @csrf
-                            @method('PATCH')
+                            <form
+                                method="POST"
+                                action="{{ route('blood-samples.review', $sample) }}"
+                                class="mt-6 border-t pt-5"
+                            >
 
-
-                            <h4 class="font-semibold mb-3">
-                                Quality Criteria
-                            </h4>
+                                @csrf
+                                @method('PATCH')
 
 
-                            <div class="mb-2">
+                                <h4 class="font-semibold mb-3">
+                                    Quality Criteria
+                                </h4>
 
-                                <input
-                                    type="hidden"
-                                    name="quality_checks[correct_labeling]"
-                                    value="0"
-                                >
 
-                                <input
-                                    type="checkbox"
-                                    name="quality_checks[correct_labeling]"
-                                    value="1"
-                                >
+                                <div class="mb-2">
 
-                                Correct Labeling
+                                    <input
+                                        type="hidden"
+                                        name="quality_checks[correct_labeling]"
+                                        value="0"
+                                    >
+
+                                    <input
+                                        type="checkbox"
+                                        name="quality_checks[correct_labeling]"
+                                        value="1"
+                                    >
+
+                                    Correct Labeling
+
+                                </div>
+
+
+                                <div class="mb-2">
+
+                                    <input
+                                        type="hidden"
+                                        name="quality_checks[sufficient_volume]"
+                                        value="0"
+                                    >
+
+                                    <input
+                                        type="checkbox"
+                                        name="quality_checks[sufficient_volume]"
+                                        value="1"
+                                    >
+
+                                    Sufficient Blood Volume
+
+                                </div>
+
+
+                                <div class="mb-2">
+
+                                    <input
+                                        type="hidden"
+                                        name="quality_checks[no_leakage]"
+                                        value="0"
+                                    >
+
+                                    <input
+                                        type="checkbox"
+                                        name="quality_checks[no_leakage]"
+                                        value="1"
+                                    >
+
+                                    No Leakage
+
+                                </div>
+
+
+                                <div class="mb-2">
+
+                                    <input
+                                        type="hidden"
+                                        name="quality_checks[proper_container]"
+                                        value="0"
+                                    >
+
+                                    <input
+                                        type="checkbox"
+                                        name="quality_checks[proper_container]"
+                                        value="1"
+                                    >
+
+                                    Proper Container
+
+                                </div>
+
+
+                                <div class="mt-4">
+
+                                    <label class="font-semibold">
+                                        Rejection Reason
+                                    </label>
+
+                                    <textarea
+                                        name="rejection_reason"
+                                        rows="3"
+                                        class="w-full border rounded mt-2"
+                                        placeholder="Required when rejecting a sample"
+                                    ></textarea>
+
+                                </div>
+
+
+                                <div class="mt-4 flex gap-3">
+
+                                    <button
+                                        type="submit"
+                                        name="decision"
+                                        value="accepted"
+                                        class="px-4 py-2 bg-green-600 text-white rounded"
+                                    >
+                                        Accept Sample
+                                    </button>
+
+
+                                    <button
+                                        type="submit"
+                                        name="decision"
+                                        value="rejected"
+                                        class="px-4 py-2 bg-red-600 text-white rounded"
+                                    >
+                                        Reject Sample
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+
+                        @elseif($overallStatus === 'declined')
+
+                            <div class="mt-5 p-4 bg-red-100 text-red-800 rounded">
+
+                                <strong>
+                                    Request Declined
+                                </strong>
+
+                                <p class="mt-1">
+                                    This sample request was declined by the administrator.
+                                    Laboratory examination cannot proceed.
+                                </p>
 
                             </div>
 
 
-                            <div class="mb-2">
+                        @elseif($sample->status === 'accepted')
 
-                                <input
-                                    type="hidden"
-                                    name="quality_checks[sufficient_volume]"
-                                    value="0"
-                                >
+                            <div class="mt-5 p-4 bg-green-100 text-green-800 rounded">
 
-                                <input
-                                    type="checkbox"
-                                    name="quality_checks[sufficient_volume]"
-                                    value="1"
-                                >
+                                <strong>
+                                    ✓ Sample Accepted
+                                </strong>
 
-                                Sufficient Blood Volume
+                                <p class="mt-1">
+                                    This sample passed the laboratory quality review.
+                                </p>
 
                             </div>
 
 
-                            <div class="mb-2">
+                        @elseif($sample->status === 'rejected')
 
-                                <input
-                                    type="hidden"
-                                    name="quality_checks[no_leakage]"
-                                    value="0"
-                                >
+                            <div class="mt-5 p-4 bg-red-100 text-red-800 rounded">
 
-                                <input
-                                    type="checkbox"
-                                    name="quality_checks[no_leakage]"
-                                    value="1"
-                                >
+                                <strong>
+                                    Sample Rejected
+                                </strong>
 
-                                No Leakage
+                                <p class="mt-1">
+                                    Reason:
+                                    {{ $sample->rejection_reason ?? 'No reason provided.' }}
+                                </p>
+
+                            </div>
+
+                        @endif
+
+                    @elseif(auth()->user()->role === 'admin')
+
+                        {{-- ================================================= --}}
+                        {{-- ADMIN IS VIEW-ONLY --}}
+                        {{-- ================================================= --}}
+
+                        @if($overallStatus === 'declined')
+
+                            <div class="mt-5 p-4 bg-red-100 text-red-800 rounded">
+
+                                <strong>
+                                    Request Declined
+                                </strong>
+
+                                <p class="mt-1">
+                                    This sample request was declined by the administrator.
+                                    The sample cannot proceed to collection or laboratory examination.
+                                </p>
 
                             </div>
 
 
-                            <div class="mb-2">
 
-                                <input
-                                    type="hidden"
-                                    name="quality_checks[proper_container]"
-                                    value="0"
-                                >
 
-                                <input
-                                    type="checkbox"
-                                    name="quality_checks[proper_container]"
-                                    value="1"
-                                >
+                        @elseif($sample->status === 'accepted')
 
-                                Proper Container
+                            <div class="mt-5 p-4 bg-green-100 text-green-800 rounded">
+
+                                <strong>
+                                    ✓ Sample Accepted
+                                </strong>
+
+                                <p class="mt-1">
+                                    This sample passed the laboratory quality review.
+                                </p>
 
                             </div>
 
 
-                            <div class="mt-4">
+                        @elseif($sample->status === 'rejected')
 
-                                <label class="font-semibold">
-                                    Rejection Reason
-                                </label>
+                            <div class="mt-5 p-4 bg-red-100 text-red-800 rounded">
 
-                                <textarea
-                                    name="rejection_reason"
-                                    rows="3"
-                                    class="w-full border rounded mt-2"
-                                    placeholder="Required when rejecting a sample"
-                                ></textarea>
+                                <strong>
+                                    Sample Rejected
+                                </strong>
 
-                            </div>
-
-
-                            <div class="mt-4 flex gap-3">
-
-                                <button
-                                    type="submit"
-                                    name="decision"
-                                    value="accepted"
-                                    class="px-4 py-2 bg-green-600 text-white rounded"
-                                >
-                                    Accept Sample
-                                </button>
-
-
-                                <button
-                                    type="submit"
-                                    name="decision"
-                                    value="rejected"
-                                    class="px-4 py-2 bg-red-600 text-white rounded"
-                                >
-                                    Reject Sample
-                                </button>
+                                <p class="mt-1">
+                                    Reason:
+                                    {{ $sample->rejection_reason ?? 'No reason provided.' }}
+                                </p>
 
                             </div>
 
-                        </form>
 
+                        @else
 
-                    @elseif($sample->status === 'accepted')
+                            <div class="mt-5 p-4 bg-gray-100 text-gray-700 rounded">
 
-                        <div class="mt-5 p-4 bg-green-100 text-green-800 rounded">
+                                <strong>
+                                    View Only
+                                </strong>
 
-                            <strong>
-                                ✓ Sample Accepted
-                            </strong>
+                                <p class="mt-1">
+                                    Laboratory examination is performed by assigned Lab Staff.
+                                </p>
 
-                            <p class="mt-1">
-                                This sample passed the laboratory quality review.
-                            </p>
+                            </div>
 
-                        </div>
-
-
-                    @else
-
-                        <div class="mt-5 p-4 bg-red-100 text-red-800 rounded">
-
-                            <strong>
-                                Sample Rejected
-                            </strong>
-
-                            <br>
-
-                            Reason:
-                            {{ $sample->rejection_reason ?? 'No reason provided.' }}
-
-                        </div>
+                        @endif
 
                     @endif
 

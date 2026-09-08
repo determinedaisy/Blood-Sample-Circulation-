@@ -12,11 +12,7 @@ class ReviewBloodSampleRequest extends FormRequest
     public function authorize(): bool
 {
     return $this->user()
-        && in_array(
-            $this->user()->role,
-            ['lab_staff', 'admin'],
-            true
-        );
+    && $this->user()->role === 'lab_staff';
 }
 
     /**

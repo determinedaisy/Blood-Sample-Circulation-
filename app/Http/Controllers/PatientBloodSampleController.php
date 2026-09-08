@@ -11,7 +11,16 @@ use Illuminate\Support\Str;
 class PatientBloodSampleController extends Controller
 {
     /**
-     * Display the patient's blood samples.
+     * Display the patient's completed blood samples.
+     *
+     * Patients should see only samples that have received
+     * a final laboratory result:
+     *
+     * - Accepted
+     * - Rejected
+     *
+     * Pending samples belong to Sample Requests / workflow
+     * and should not appear here.
      */
     public function index()
     {
@@ -35,6 +44,10 @@ class PatientBloodSampleController extends Controller
             'transportations.laboratory',
         ])
             ->where('patient_id', auth()->id())
+            ->whereIn('status', [
+                'accepted',
+                'rejected',
+            ])
             ->latest()
             ->get();
 
@@ -43,6 +56,7 @@ class PatientBloodSampleController extends Controller
             compact('bloodSamples')
         );
     }
+
 
     /**
      * Display the patient's blood sample donation form.
@@ -58,6 +72,7 @@ class PatientBloodSampleController extends Controller
 
         return view('patient.blood-samples.create');
     }
+
 
     /**
      * Store a new blood sample donation.
@@ -126,6 +141,9 @@ class PatientBloodSampleController extends Controller
 
         /*
          * Create the blood sample.
+         *
+         * It starts as pending because it still
+         * requires laboratory examination.
          */
         BloodSample::create([
             'sample_code' => $sampleCode,

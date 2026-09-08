@@ -30,6 +30,22 @@ class SampleRequestController extends Controller
             abort(403);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | PATIENT SAMPLE REQUESTS
+        |--------------------------------------------------------------------------
+        |
+        | This page should ONLY show requests that are still waiting
+        | for administrator approval.
+        |
+        | Once the administrator approves the request, it disappears
+        | from Sample Requests.
+        |
+        | The resulting blood sample will appear in My Blood Samples
+        | once laboratory review is completed.
+        |
+        */
+
         $requests = SampleRequest::with([
             'requester',
             'approver',
@@ -40,6 +56,7 @@ class SampleRequestController extends Controller
             'bloodSample.transportations.laboratory',
         ])
             ->where('patient_id', Auth::id())
+            ->where('status', 'pending')
             ->latest()
             ->get();
 
@@ -60,241 +77,240 @@ class SampleRequestController extends Controller
     }
 
 
-public function store(Request $request): RedirectResponse
-{
-    if (!Auth::check() || Auth::user()->role !== 'patient') {
-        abort(403);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate request + collection choice
-    |--------------------------------------------------------------------------
-    */
-
-    $validated = $request->validate([
-        'sample_type' => [
-            'required',
-            'string',
-            'max:100',
-        ],
-
-        'blood_type' => [
-            'nullable',
-            'string',
-            'max:10',
-        ],
-
-        'notes' => [
-            'nullable',
-            'string',
-            'max:1000',
-        ],
+    public function store(Request $request): RedirectResponse
+    {
+        if (!Auth::check() || Auth::user()->role !== 'patient') {
+            abort(403);
+        }
 
         /*
-         * Patient MUST choose the collection method
-         * when the request is originally submitted.
-         */
-        'collection_method' => [
-            'required',
-            'in:center,home',
-        ],
+        |--------------------------------------------------------------------------
+        | Validate request + collection choice
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'sample_type' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'blood_type' => [
+                'nullable',
+                'string',
+                'max:10',
+            ],
+
+            'notes' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            /*
+             * Patient MUST choose the collection method
+             * when the request is originally submitted.
+             */
+            'collection_method' => [
+                'required',
+                'in:center,home',
+            ],
+
+            /*
+             * These are required ONLY for Home Collection.
+             */
+            'address' => [
+                'required_if:collection_method,home',
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'preferred_date' => [
+                'required_if:collection_method,home',
+                'nullable',
+                'date',
+                'after_or_equal:today',
+            ],
+
+            'preferred_time' => [
+                'required_if:collection_method,home',
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'instructions' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'latitude' => [
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+
+            'longitude' => [
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+        ]);
+
 
         /*
-         * These are required ONLY for Home Collection.
-         */
-        'address' => [
-            'required_if:collection_method,home',
-            'nullable',
-            'string',
-            'max:255',
-        ],
+        |--------------------------------------------------------------------------
+        | Create Blood Sample
+        |--------------------------------------------------------------------------
+        */
 
-        'preferred_date' => [
-            'required_if:collection_method,home',
-            'nullable',
-            'date',
-            'after_or_equal:today',
-        ],
-
-        'preferred_time' => [
-            'required_if:collection_method,home',
-            'nullable',
-            'string',
-            'max:100',
-        ],
-
-        'instructions' => [
-            'nullable',
-            'string',
-            'max:1000',
-        ],
-
-        'latitude' => [
-            'nullable',
-            'numeric',
-            'between:-90,90',
-        ],
-
-        'longitude' => [
-            'nullable',
-            'numeric',
-            'between:-180,180',
-        ],
-    ]);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Blood Sample
-    |--------------------------------------------------------------------------
-    */
-
-    $bloodSample = BloodSample::create([
-        'sample_code' =>
-            'BS-' . strtoupper(substr(uniqid(), -8)),
-
-        'patient_id' =>
-            Auth::id(),
-
-        'sample_type' =>
-            $validated['sample_type'],
-
-        'blood_type' =>
-            $validated['blood_type'] ?? null,
-
-        'status' =>
-            'pending',
-
-        'collected_by' =>
-            null,
-
-        'collected_at' =>
-            null,
-
-        'reviewed_by' =>
-            null,
-
-        'reviewed_at' =>
-            null,
-
-        'rejection_reason' =>
-            null,
-    ]);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Main Sample Request
-    |--------------------------------------------------------------------------
-    */
-
-    $sampleRequest = SampleRequest::create([
-        'patient_id' =>
-            Auth::id(),
-
-        'requested_by' =>
-            Auth::id(),
-
-        'blood_sample_id' =>
-            $bloodSample->id,
-
-        'sample_type' =>
-            $validated['sample_type'],
-
-        'blood_type' =>
-            $validated['blood_type'] ?? null,
-
-        'status' =>
-            'pending',
-
-        'notes' =>
-            $validated['notes'] ?? null,
-    ]);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Home Collection immediately if patient chose it
-    |--------------------------------------------------------------------------
-    |
-    | This is the important change.
-    |
-    | We DO NOT wait until admin approval anymore.
-    |
-    */
-
-    if ($validated['collection_method'] === 'home') {
-
-        HomeCollectionRequest::create([
-            'sample_request_id' =>
-                $sampleRequest->id,
+        $bloodSample = BloodSample::create([
+            'sample_code' =>
+                'BS-' . strtoupper(substr(uniqid(), -8)),
 
             'patient_id' =>
                 Auth::id(),
 
-            'assigned_collector_id' =>
-                null,
+            'sample_type' =>
+                $validated['sample_type'],
 
-            'address' =>
-                $validated['address'],
-
-            'latitude' =>
-                $validated['latitude'] ?? null,
-
-            'longitude' =>
-                $validated['longitude'] ?? null,
-
-            'preferred_date' =>
-                $validated['preferred_date'],
-
-            'preferred_time' =>
-                $validated['preferred_time'],
-
-            'instructions' =>
-                $validated['instructions'] ?? null,
+            'blood_type' =>
+                $validated['blood_type'] ?? null,
 
             'status' =>
                 'pending',
 
-            'assigned_at' =>
-                null,
-
-            'on_the_way_at' =>
-                null,
-
-            'arrived_at' =>
+            'collected_by' =>
                 null,
 
             'collected_at' =>
                 null,
+
+            'reviewed_by' =>
+                null,
+
+            'reviewed_at' =>
+                null,
+
+            'rejection_reason' =>
+                null,
         ]);
-    }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Redirect
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Create Main Sample Request
+        |--------------------------------------------------------------------------
+        */
 
-    if ($validated['collection_method'] === 'home') {
+        $sampleRequest = SampleRequest::create([
+            'patient_id' =>
+                Auth::id(),
+
+            'requested_by' =>
+                Auth::id(),
+
+            'blood_sample_id' =>
+                $bloodSample->id,
+
+            'sample_type' =>
+                $validated['sample_type'],
+
+            'blood_type' =>
+                $validated['blood_type'] ?? null,
+
+            'status' =>
+                'pending',
+
+            'notes' =>
+                $validated['notes'] ?? null,
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Home Collection immediately if patient chose it
+        |--------------------------------------------------------------------------
+        |
+        | We DO NOT wait until admin approval to store the patient's
+        | requested home-collection details.
+        |
+        */
+
+        if ($validated['collection_method'] === 'home') {
+
+            HomeCollectionRequest::create([
+                'sample_request_id' =>
+                    $sampleRequest->id,
+
+                'patient_id' =>
+                    Auth::id(),
+
+                'assigned_collector_id' =>
+                    null,
+
+                'address' =>
+                    $validated['address'],
+
+                'latitude' =>
+                    $validated['latitude'] ?? null,
+
+                'longitude' =>
+                    $validated['longitude'] ?? null,
+
+                'preferred_date' =>
+                    $validated['preferred_date'],
+
+                'preferred_time' =>
+                    $validated['preferred_time'],
+
+                'instructions' =>
+                    $validated['instructions'] ?? null,
+
+                'status' =>
+                    'pending',
+
+                'assigned_at' =>
+                    null,
+
+                'on_the_way_at' =>
+                    null,
+
+                'arrived_at' =>
+                    null,
+
+                'collected_at' =>
+                    null,
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Redirect
+        |--------------------------------------------------------------------------
+        */
+
+        if ($validated['collection_method'] === 'home') {
+
+            return redirect()
+                ->route('sample-requests.patient.index')
+                ->with(
+                    'success',
+                    'Home collection request submitted successfully.'
+                );
+        }
 
         return redirect()
             ->route('sample-requests.patient.index')
             ->with(
                 'success',
-                'Home collection request submitted successfully.'
+                'Blood sample request submitted successfully.'
             );
     }
-
-    return redirect()
-        ->route('sample-requests.patient.index')
-        ->with(
-            'success',
-            'Blood sample request submitted successfully.'
-        );
-}
 
 
     /*
@@ -768,20 +784,20 @@ public function store(Request $request): RedirectResponse
             abort(403);
         }
 
-      $requests = SampleRequest::with([
-    'patient',
-    'requester',
-    'approver',
+        $requests = SampleRequest::with([
+            'patient',
+            'requester',
+            'approver',
 
-    'assignedDoctor.doctorProfile',
+            'assignedDoctor.doctorProfile',
 
-    'bloodSample.transportations.transporter',
-    'bloodSample.transportations.collectionCenter',
-    'bloodSample.transportations.laboratory',
-])
-    ->whereDoesntHave('homeCollection')
-    ->latest()
-    ->get();
+            'bloodSample.transportations.transporter',
+            'bloodSample.transportations.collectionCenter',
+            'bloodSample.transportations.laboratory',
+        ])
+            ->whereDoesntHave('homeCollection')
+            ->latest()
+            ->get();
 
         $collectors = User::where(
             'role',
@@ -827,8 +843,6 @@ public function store(Request $request): RedirectResponse
         );
     }
 
-    
-
 
     public function approve(
         SampleRequest $sampleRequest
@@ -850,6 +864,7 @@ public function store(Request $request): RedirectResponse
 
         // STRICT SECURITY CHECK: Ensure payment is completed
         $payment = $sampleRequest->bloodSample?->payment;
+
         if (!$payment || $payment->status !== 'completed') {
             return back()->with(
                 'error',
@@ -907,7 +922,10 @@ public function store(Request $request): RedirectResponse
             'bloodSample',
         ]);
 
-        $sampleCode = $sampleRequest->bloodSample?->sample_code;
+        $sampleCode =
+            $sampleRequest
+                ->bloodSample
+                ?->sample_code;
 
         $sampleRequest->update([
             'status' =>
@@ -924,14 +942,21 @@ public function store(Request $request): RedirectResponse
             new PatientSampleUpdateNotification(
                 kind: 'sample_request_declined',
                 title: 'Sample request declined',
-                message: 'Your '.$sampleRequest->sample_type.' sample request was declined by the administrator.',
-                sampleRequestId: $sampleRequest->id,
-                sampleCode: $sampleCode,
-                actionLabel: 'View My Requests',
+                message:
+                    'Your '
+                    .$sampleRequest->sample_type
+                    .' sample request was declined by the administrator.',
+                sampleRequestId:
+                    $sampleRequest->id,
+                sampleCode:
+                    $sampleCode,
+                actionLabel:
+                    'View My Requests',
             )
         );
 
         if ($sampleRequest->bloodSample) {
+
             $sampleRequest
                 ->bloodSample
                 ->delete();
@@ -983,7 +1008,11 @@ public function store(Request $request): RedirectResponse
         }
 
         // STRICT SECURITY CHECK: Ensure payment is completed
-        $payment = $sampleRequest->bloodSample?->payment;
+        $payment =
+            $sampleRequest
+                ->bloodSample
+                ?->payment;
+
         if (!$payment || $payment->status !== 'completed') {
             return back()->with(
                 'error',

@@ -22,6 +22,7 @@ class BloodSample extends Model
         'reviewed_at',
         'blood_type',
         'donor_id',
+        'assigned_lab_staff_id',
     ];
 
     protected function casts(): array
@@ -96,6 +97,11 @@ public function overallStatus(): string
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
+
+    public function assignedLabStaff()
+{
+    return $this->belongsTo(User::class, 'assigned_lab_staff_id');
+}
     
     public function payment()
     {

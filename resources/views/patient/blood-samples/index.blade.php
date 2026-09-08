@@ -1,32 +1,75 @@
 <x-app-layout>
-            @if(session('error'))
-            <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
-                <div class="p-4 mb-4 text-sm text-red-800 rounded-xl bg-red-50 border border-red-200 shadow-sm" role="alert">
-                    <span class="font-extrabold">Payment Error:</span> {{ session('error') }}
-                </div>
-            </div>
-        @endif
 
-        @if(session('success'))
-            <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
-                <div class="p-4 mb-4 text-sm text-green-800 rounded-xl bg-green-50 border border-green-200 shadow-sm" role="alert">
-                    <span class="font-extrabold">Success:</span> {{ session('success') }}
-                </div>
+    {{-- ================================================= --}}
+    {{-- SESSION MESSAGES --}}
+    {{-- ================================================= --}}
+
+    @if(session('error'))
+
+        <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
+
+            <div
+                class="p-4 mb-4 text-sm text-red-800 rounded-xl
+                       bg-red-50 border border-red-200 shadow-sm"
+                role="alert"
+            >
+
+                <span class="font-extrabold">
+                    Payment Error:
+                </span>
+
+                {{ session('error') }}
+
             </div>
-        @endif
+
+        </div>
+
+    @endif
+
+
+    @if(session('success'))
+
+        <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
+
+            <div
+                class="p-4 mb-4 text-sm text-green-800 rounded-xl
+                       bg-green-50 border border-green-200 shadow-sm"
+                role="alert"
+            >
+
+                <span class="font-extrabold">
+                    Success:
+                </span>
+
+                {{ session('success') }}
+
+            </div>
+
+        </div>
+
+    @endif
+
+
+    {{-- ================================================= --}}
+    {{-- HEADER --}}
+    {{-- ================================================= --}}
 
     <x-slot name="header">
+
         <div class="flex items-center justify-between">
 
             <div>
+
                 <h2 class="text-2xl font-bold text-gray-900">
                     My Blood Samples
                 </h2>
 
                 <p class="text-sm text-gray-500 mt-1">
-                    View your blood sample history and current progress.
+                    View your completed blood sample history and laboratory results.
                 </p>
+
             </div>
+
 
             <a
                 href="{{ route('patient.blood-samples.create') }}"
@@ -39,10 +82,16 @@
             </a>
 
         </div>
+
     </x-slot>
 
 
+    {{-- ================================================= --}}
+    {{-- PAGE STYLES --}}
+    {{-- ================================================= --}}
+
     <style>
+
         .samples-page {
             background: #f4f6f9;
             min-height: 100vh;
@@ -224,13 +273,28 @@
             box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
         }
 
+        .qr-code {
+            width: 110px;
+            height: 110px;
+        }
+
+        .qr-code img,
+        .qr-code canvas {
+            display: block;
+            width: 110px !important;
+            height: 110px !important;
+        }
+
         @media (max-width: 900px) {
+
             .info-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
         }
 
         @media (max-width: 600px) {
+
             .sample-top {
                 flex-direction: column;
             }
@@ -242,44 +306,121 @@
             .sample-card-body {
                 padding: 22px 18px;
             }
+
         }
+
     </style>
 
+
+    {{-- ================================================= --}}
+    {{-- SAMPLES --}}
+    {{-- ================================================= --}}
 
     <div class="samples-page">
 
         <div class="samples-container">
 
-            @if(session('success'))
-
-                <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl">
-                    {{ session('success') }}
-                </div>
-
-            @endif
-
-
             @forelse($bloodSamples as $sample)
 
                 @php
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | OVERALL SAMPLE STATUS
+                    |--------------------------------------------------------------------------
+                    */
+
                     $overallStatus = $sample->overallStatus();
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | LATEST TRANSPORTATION
+                    |--------------------------------------------------------------------------
+                    */
 
                     $transportation = $sample
                         ->transportations
                         ->sortByDesc('id')
                         ->first();
 
-                    $collectorName = $sample->collector?->name
-                        ?? $transportation?->transporter?->name
-                        ?? 'Not assigned';
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | TRANSPORTATION STATUS
+                    |--------------------------------------------------------------------------
+                    |
+                    | Normally this comes from the transportation record.
+                    |
+                    | However, if the blood sample has already received a final
+                    | laboratory result (accepted/rejected), it has necessarily
+                    | reached the laboratory.
+                    |
+                    | Therefore, if an old/incomplete record has no transportation
+                    | entry, we display "Delivered" instead of misleading the
+                    | patient with "Not assigned".
+                    |
+                    */
+
+                    $transportationStatus =
+                        $transportation?->status;
+
+
+                    if (
+                        !$transportationStatus
+                        && in_array(
+                            $sample->status,
+                            ['accepted', 'rejected'],
+                            true
+                        )
+                    ) {
+
+                        $transportationStatus = 'delivered';
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | COLLECTOR
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $collectorName =
+                        $sample->collector?->name
+                        ??
+                        $transportation?->transporter?->name
+                        ??
+                        'Not assigned';
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | QR CODE URL
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $sampleCardUrl =
+                        url('/sample/card/' . $sample->sample_code);
+
                 @endphp
 
+
+                {{-- ================================================= --}}
+                {{-- SAMPLE CARD --}}
+                {{-- ================================================= --}}
 
                 <div class="sample-card">
 
                     <div class="sample-card-body">
 
+
+                        {{-- ================================================= --}}
+                        {{-- TOP SECTION --}}
+                        {{-- ================================================= --}}
+
                         <div class="sample-top">
+
 
                             <div>
 
@@ -287,41 +428,108 @@
                                     Blood Sample
                                 </div>
 
+
                                 <div class="sample-code">
                                     {{ $sample->sample_code ?? 'Not Assigned' }}
                                 </div>
+
 
                                 <div class="sample-meta">
 
                                     {{ $sample->sample_type ?? 'Sample type not specified' }}
 
                                     @if($sample->blood_type)
+
                                         · {{ $sample->blood_type }}
+
                                     @endif
 
                                 </div>
 
 
-                                <!-- FEATURE 3: Patient QR Code Generation -->
-                                <div class="mt-4 p-3 bg-white border border-gray-200 rounded-xl inline-block shadow-sm">
-                                    {!! QrCode::size(110)->margin(1)->generate(url('/sample/card/' . $sample->sample_code)) !!}
+                                {{-- ================================================= --}}
+                                {{-- QR CODE --}}
+                                {{-- ================================================= --}}
+
+                                <div
+                                    class="mt-4 p-3 bg-white border border-gray-200
+                                           rounded-xl inline-block shadow-sm"
+                                >
+
+                                    <div
+                                        class="qr-code"
+                                        data-url="{{ $sampleCardUrl }}"
+                                    ></div>
+
+                                    <p class="text-xs text-gray-500 text-center mt-2">
+                                        Scan to view sample
+                                    </p>
+
                                 </div>
-                                
+
+
+                                {{-- ================================================= --}}
+                                {{-- BKASH PAYMENT --}}
+                                {{-- ================================================= --}}
+
                                 <div class="mt-4">
-                                    @if($sample->payment && $sample->payment->status === 'completed')
-                                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl font-bold text-sm">
-                                            <span>✓</span> Paid (TrxID: {{ $sample->payment->transaction_id }})
+
+                                    @if(
+                                        $sample->payment
+                                        &&
+                                        $sample->payment->status === 'completed'
+                                    )
+
+                                        <div
+                                            class="inline-flex items-center gap-2
+                                                   px-4 py-2
+                                                   bg-green-50
+                                                   border border-green-200
+                                                   text-green-700
+                                                   rounded-xl
+                                                   font-bold text-sm"
+                                        >
+
+                                            <span>✓</span>
+
+                                            Paid
+
+                                            (TrxID:
+                                            {{ $sample->payment->transaction_id }})
+
                                         </div>
+
                                     @else
-                                        <a href="{{ route('payment.bkash.initiate', $sample->sample_code) }}" 
-                                        class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-2.5 bg-[#e2136e] hover:bg-[#c70f61] text-white font-bold rounded-xl shadow-sm transition-colors duration-200">
+
+                                        <a
+                                            href="{{ route(
+                                                'payment.bkash.initiate',
+                                                $sample->sample_code
+                                            ) }}"
+                                            class="inline-flex items-center justify-center
+                                                   w-full sm:w-auto
+                                                   px-6 py-2.5
+                                                   bg-[#e2136e]
+                                                   hover:bg-[#c70f61]
+                                                   text-white
+                                                   font-bold
+                                                   rounded-xl
+                                                   shadow-sm
+                                                   transition-colors duration-200"
+                                        >
                                             Pay Lab Fee via bKash (500 BDT)
                                         </a>
+
                                     @endif
+
                                 </div>
 
                             </div>
 
+
+                            {{-- ================================================= --}}
+                            {{-- STATUS BADGE --}}
+                            {{-- ================================================= --}}
 
                             <div>
 
@@ -370,7 +578,7 @@
                                 @else
 
                                     <span class="status-badge status-yellow">
-                                        ● Request Pending
+                                        ○ Request Pending
                                     </span>
 
                                 @endif
@@ -380,7 +588,14 @@
                         </div>
 
 
+                        {{-- ================================================= --}}
+                        {{-- SAMPLE INFORMATION --}}
+                        {{-- ================================================= --}}
+
                         <div class="info-grid">
+
+
+                            {{-- SAMPLE TYPE --}}
 
                             <div class="info-box">
 
@@ -395,6 +610,8 @@
                             </div>
 
 
+                            {{-- COLLECTOR --}}
+
                             <div class="info-box">
 
                                 <div class="info-label">
@@ -408,6 +625,8 @@
                             </div>
 
 
+                            {{-- TRANSPORTATION --}}
+
                             <div class="info-box">
 
                                 <div class="info-label">
@@ -416,9 +635,15 @@
 
                                 <div class="info-value">
 
-                                    @if($transportation)
+                                    @if($transportationStatus)
 
-                                        {{ ucwords(str_replace('_', ' ', $transportation->status)) }}
+                                        {{ ucwords(
+                                            str_replace(
+                                                '_',
+                                                ' ',
+                                                $transportationStatus
+                                            )
+                                        ) }}
 
                                     @else
 
@@ -430,6 +655,8 @@
 
                             </div>
 
+
+                            {{-- LABORATORY REVIEW --}}
 
                             <div class="info-box">
 
@@ -447,7 +674,9 @@
 
                                         Rejected
 
-                                    @elseif($transportation?->status === 'delivered')
+                                    @elseif(
+                                        $transportationStatus === 'delivered'
+                                    )
 
                                         Awaiting review
 
@@ -464,9 +693,16 @@
                         </div>
 
 
+                        {{-- ================================================= --}}
+                        {{-- TRANSPORTATION DETAILS --}}
+                        {{-- ================================================= --}}
+
                         @if($transportation)
 
                             <div class="info-grid">
+
+
+                                {{-- COLLECTION CENTER --}}
 
                                 <div class="info-box">
 
@@ -475,11 +711,19 @@
                                     </div>
 
                                     <div class="info-value">
-                                        {{ $transportation->collectionCenter?->name ?? 'Not specified' }}
+                                        {{
+                                            $transportation
+                                                ->collectionCenter
+                                                ?->name
+                                            ??
+                                            'Not specified'
+                                        }}
                                     </div>
 
                                 </div>
 
+
+                                {{-- LABORATORY --}}
 
                                 <div class="info-box">
 
@@ -488,11 +732,19 @@
                                     </div>
 
                                     <div class="info-value">
-                                        {{ $transportation->laboratory?->name ?? 'Not specified' }}
+                                        {{
+                                            $transportation
+                                                ->laboratory
+                                                ?->name
+                                            ??
+                                            'Not specified'
+                                        }}
                                     </div>
 
                                 </div>
 
+
+                                {{-- DEPARTURE --}}
 
                                 <div class="info-box">
 
@@ -504,7 +756,13 @@
 
                                         @if($transportation->departure_time)
 
-                                            {{ $transportation->departure_time->format('d M Y, h:i A') }}
+                                            {{
+                                                $transportation
+                                                    ->departure_time
+                                                    ->format(
+                                                        'd M Y, h:i A'
+                                                    )
+                                            }}
 
                                         @else
 
@@ -517,6 +775,8 @@
                                 </div>
 
 
+                                {{-- ARRIVAL --}}
+
                                 <div class="info-box">
 
                                     <div class="info-label">
@@ -527,7 +787,21 @@
 
                                         @if($transportation->arrival_time)
 
-                                            {{ $transportation->arrival_time->format('d M Y, h:i A') }}
+                                            {{
+                                                $transportation
+                                                    ->arrival_time
+                                                    ->format(
+                                                        'd M Y, h:i A'
+                                                    )
+                                            }}
+
+                                        @elseif(
+                                            $sample->status === 'accepted'
+                                            ||
+                                            $sample->status === 'rejected'
+                                        )
+
+                                            Delivered to laboratory
 
                                         @else
 
@@ -544,6 +818,10 @@
                         @endif
 
 
+                        {{-- ================================================= --}}
+                        {{-- REVIEW INFORMATION --}}
+                        {{-- ================================================= --}}
+
                         @if($sample->reviewer)
 
                             <div class="mt-4 text-sm text-gray-500">
@@ -557,7 +835,14 @@
                                 @if($sample->reviewed_at)
 
                                     on
-                                    {{ $sample->reviewed_at->format('d M Y, h:i A') }}
+
+                                    {{
+                                        $sample
+                                            ->reviewed_at
+                                            ->format(
+                                                'd M Y, h:i A'
+                                            )
+                                    }}
 
                                 @endif
 
@@ -567,7 +852,7 @@
 
 
                         {{-- ================================================= --}}
-                        {{-- CURRENT LIFECYCLE MESSAGE --}}
+                        {{-- FINAL LABORATORY RESULT --}}
                         {{-- ================================================= --}}
 
                         @if($overallStatus === 'accepted')
@@ -579,8 +864,11 @@
                                 </div>
 
                                 <div class="review-text">
-                                    Your blood sample passed laboratory quality review
-                                    and is now available in the blood inventory.
+
+                                    Your blood sample passed laboratory
+                                    quality review and is now available
+                                    in the blood inventory.
+
                                 </div>
 
                             </div>
@@ -596,9 +884,15 @@
 
                                 <div class="review-text">
 
-                                    <strong>Reason:</strong>
+                                    <strong>
+                                        Reason:
+                                    </strong>
 
-                                    {{ $sample->rejection_reason ?? 'No reason provided.' }}
+                                    {{
+                                        $sample->rejection_reason
+                                        ??
+                                        'No reason provided.'
+                                    }}
 
                                 </div>
 
@@ -615,8 +909,8 @@
 
                                 <div class="review-text">
 
-                                    Your blood sample is currently being transported
-                                    to the laboratory.
+                                    Your blood sample is currently
+                                    being transported to the laboratory.
 
                                     @if($collectorName !== 'Not assigned')
 
@@ -642,8 +936,11 @@
                                 </div>
 
                                 <div class="review-text">
-                                    Your blood sample has reached the laboratory
-                                    and is now waiting for laboratory review.
+
+                                    Your blood sample has reached
+                                    the laboratory and is now waiting
+                                    for laboratory review.
+
                                 </div>
 
                             </div>
@@ -680,8 +977,10 @@
                                 </div>
 
                                 <div class="review-text">
+
                                     Your request has been approved.
                                     A sample collector will be assigned next.
+
                                 </div>
 
                             </div>
@@ -696,8 +995,10 @@
                                 </div>
 
                                 <div class="review-text">
+
                                     This blood sample request was declined
                                     and will not continue to transportation.
+
                                 </div>
 
                             </div>
@@ -712,45 +1013,74 @@
                                 </div>
 
                                 <div class="review-text">
+
                                     Your blood sample request is waiting
                                     for administrator approval.
+
                                 </div>
 
                             </div>
 
                         @endif
 
-                        @if($sample->sampleReport?->status === 'published')
 
-                            <div class="review-box review-green" style="margin-top: 16px;">
+                        {{-- ================================================= --}}
+                        {{-- MEDICAL REPORT --}}
+                        {{-- ================================================= --}}
+
+                        @if(
+                            $sample->sampleReport?->status === 'published'
+                        )
+
+                            <div
+                                class="review-box review-green"
+                                style="margin-top: 16px;"
+                            >
 
                                 <div class="review-title">
                                     Medical Report Available
                                 </div>
 
                                 <div class="review-text">
-                                    Your doctor has reviewed and published the laboratory report.
+
+                                    Your doctor has reviewed and published
+                                    the laboratory report.
+
                                 </div>
 
                                 <a
-                                    href="{{ route('sample-reports.patient.show', $sample->sampleReport) }}"
-                                    class="inline-flex items-center mt-4 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
+                                    href="{{ route(
+                                        'sample-reports.patient.show',
+                                        $sample->sampleReport
+                                    ) }}"
+                                    class="inline-flex items-center mt-4
+                                           px-4 py-2 rounded-lg
+                                           bg-green-600 text-white
+                                           text-sm font-semibold
+                                           hover:bg-green-700"
                                 >
                                     View Medical Report
                                 </a>
 
                             </div>
 
+
                         @elseif($sample->sampleReport)
 
-                            <div class="review-box review-yellow" style="margin-top: 16px;">
+                            <div
+                                class="review-box review-yellow"
+                                style="margin-top: 16px;"
+                            >
 
                                 <div class="review-title">
                                     Medical Report Being Prepared
                                 </div>
 
                                 <div class="review-text">
-                                    Your assigned doctor has not published the report yet.
+
+                                    Your assigned doctor has not published
+                                    the report yet.
+
                                 </div>
 
                             </div>
@@ -764,6 +1094,10 @@
 
             @empty
 
+                {{-- ================================================= --}}
+                {{-- EMPTY STATE --}}
+                {{-- ================================================= --}}
+
                 <div class="empty-card">
 
                     <div class="text-2xl font-bold text-gray-900">
@@ -771,7 +1105,7 @@
                     </div>
 
                     <p class="mt-2 text-gray-500">
-                        You currently have no blood sample history.
+                        You currently have no completed blood sample history.
                     </p>
 
                     <a
@@ -790,5 +1124,58 @@
         </div>
 
     </div>
+
+
+    {{-- ================================================= --}}
+    {{-- QR CODE LIBRARY --}}
+    {{-- ================================================= --}}
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            document
+                .querySelectorAll('.qr-code')
+                .forEach(function (element) {
+
+                    const url =
+                        element.dataset.url;
+
+
+                    if (!url) {
+                        return;
+                    }
+
+
+                    if (typeof QRCode === 'undefined') {
+
+                        console.error(
+                            'QR Code library failed to load.'
+                        );
+
+                        return;
+                    }
+
+
+                    new QRCode(
+                        element,
+                        {
+                            text: url,
+                            width: 110,
+                            height: 110,
+                            correctLevel:
+                                QRCode.CorrectLevel.M
+                        }
+                    );
+
+                });
+
+        });
+
+    </script>
+
 
 </x-app-layout>

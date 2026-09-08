@@ -2,142 +2,156 @@
 
 namespace Database\Seeders;
 
-
-use Illuminate\Database\Seeder;
 use App\Models\Donor;
 use App\Models\User;
-
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DonorSeeder extends Seeder
 {
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Emergency SOS Test Location
+        |--------------------------------------------------------------------------
+        |
+        | Patient/SOS test location:
+        | Latitude:  23.8103
+        | Longitude: 90.4125
+        |
+        | All donors are intentionally placed within approximately 2 km
+        | of this location so the Emergency SOS compatibility system
+        | can be properly tested.
+        |
+        */
 
+        $donors = [
 
-        $karim = User::firstOrCreate(
-            [
-                'email' => 'karim.donor@gmail.com'
-            ],
             [
                 'name' => 'Karim Donor',
-                'password' => bcrypt('password'),
-                'role' => 'donor'
-            ]
-        );
-
-
-        Donor::firstOrCreate(
-
-            [
-                'user_id' => $karim->id
-            ],
-
-            [
-
+                'email' => 'karim.donor@gmail.com',
                 'blood_group' => 'B+',
+                'phone' => '01710000001',
 
-                'phone' => '01722222222',
-
-                'latitude' => 23.8103,
-
-                'longitude' => 90.4125,
-
-                'is_willing' => true,
-
-                'is_available' => true,
-
-                'is_verified' => true,
-
-            ]
-
-        );
-
-
-
-
-
-        $sakib = User::firstOrCreate(
-            [
-                'email' => 'sakib.donor@gmail.com'
+                // Approximately 1.2 km north
+                'latitude' => 23.8210000,
+                'longitude' => 90.4125000,
             ],
+
             [
                 'name' => 'Sakib Donor',
-                'password' => bcrypt('password'),
-                'role' => 'donor'
-            ]
-        );
+                'email' => 'sakib.donor@gmail.com',
+                'blood_group' => 'O+',
+                'phone' => '01710000002',
 
-
-
-        Donor::firstOrCreate(
-
-            [
-                'user_id' => $sakib->id
+                // Approximately 1.4 km east
+                'latitude' => 23.8103000,
+                'longitude' => 90.4262000,
             ],
 
-            [
-
-                'blood_group' => 'O-',
-
-                'phone' => '01733333333',
-
-                'latitude' => 23.8150,
-
-                'longitude' => 90.4200,
-
-                'is_willing' => true,
-
-                'is_available' => true,
-
-                'is_verified' => true,
-
-            ]
-
-        );
-
-
-
-
-
-        $rahim = User::firstOrCreate(
-            [
-                'email' => 'rahim.donor@gmail.com'
-            ],
             [
                 'name' => 'Rahim Donor',
-                'password' => bcrypt('password'),
-                'role' => 'donor'
-            ]
-        );
+                'email' => 'rahim.donor@gmail.com',
+                'blood_group' => 'A+',
+                'phone' => '01710000003',
 
-
-
-        Donor::firstOrCreate(
-
-            [
-                'user_id' => $rahim->id
+                // Approximately 1.7 km northeast
+                'latitude' => 23.8210000,
+                'longitude' => 90.4245000,
             ],
 
             [
+                'name' => 'Nabil Donor',
+                'email' => 'nabil.donor@gmail.com',
+                'blood_group' => 'A-',
+                'phone' => '01710000004',
 
-                'blood_group' => 'A+',
+                // Approximately 1.3 km south
+                'latitude' => 23.7986000,
+                'longitude' => 90.4125000,
+            ],
 
-                'phone' => '01711111111',
+            [
+                'name' => 'Tanvir Donor',
+                'email' => 'tanvir.donor@gmail.com',
+                'blood_group' => 'B-',
+                'phone' => '01710000005',
 
-                'latitude' => 23.8200,
+                // Approximately 1.5 km west
+                'latitude' => 23.8103000,
+                'longitude' => 90.3978000,
+            ],
 
-                'longitude' => 90.4300,
+            [
+                'name' => 'Farhan Donor',
+                'email' => 'farhan.donor@gmail.com',
+                'blood_group' => 'AB+',
+                'phone' => '01710000006',
 
-                'is_willing' => true,
+                // Approximately 1.8 km northwest
+                'latitude' => 23.8235000,
+                'longitude' => 90.3978000,
+            ],
 
-                'is_available' => true,
+            [
+                'name' => 'Imran Donor',
+                'email' => 'imran.donor@gmail.com',
+                'blood_group' => 'AB-',
+                'phone' => '01710000007',
 
-                'is_verified' => true,
+                // Approximately 1.7 km southeast
+                'latitude' => 23.7986000,
+                'longitude' => 90.4245000,
+            ],
 
-            ]
+            [
+                'name' => 'Shakil Donor',
+                'email' => 'shakil.donor@gmail.com',
+                'blood_group' => 'O-',
+                'phone' => '01710000008',
 
-        );
+                // Approximately 1.9 km southwest
+                'latitude' => 23.7986000,
+                'longitude' => 90.3978000,
+            ],
 
+        ];
 
+        foreach ($donors as $donorData) {
+
+            $user = User::updateOrCreate(
+                [
+                    'email' => $donorData['email'],
+                ],
+                [
+                    'name' => $donorData['name'],
+                    'email' => $donorData['email'],
+                    'password' => Hash::make('password'),
+                    'role' => 'donor',
+                ]
+            );
+
+            Donor::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                ],
+                [
+                    'blood_group' => $donorData['blood_group'],
+                    'phone' => $donorData['phone'],
+                    'latitude' => $donorData['latitude'],
+                    'longitude' => $donorData['longitude'],
+
+                    'is_willing' => true,
+                    'is_available' => true,
+                    'is_verified' => true,
+
+                    'donation_count' => 0,
+                    'donor_badge' => 'none',
+                    'shop_discount' => 0,
+                    'donor_priority' => 0,
+                ]
+            );
+        }
     }
 }

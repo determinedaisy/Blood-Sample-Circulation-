@@ -29,37 +29,40 @@ class Donor extends Model
         'is_verified' => 'boolean',
     ];
 
-    /**
-     * Donor belongs to a user account.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * All blood samples donated by this donor.
-     */
     public function bloodSamples(): HasMany
     {
-        return $this->hasMany(BloodSample::class, 'donor_id');
+        return $this->hasMany(
+            BloodSample::class,
+            'donor_id'
+        );
     }
 
-    /**
-     * Count only successfully accepted donations.
-     */
+    public function donorRequests(): HasMany
+    {
+        return $this->hasMany(
+            DonorRequest::class,
+            'donor_id'
+        );
+    }
+
     public function successfulDonationCount(): int
     {
-        return $this->bloodSamples()
+        $acceptedBloodSamples = $this->bloodSamples()
             ->where('status', 'accepted')
             ->count();
+
+        $completedEmergencyDonations = $this->donorRequests()
+            ->where('status', 'completed')
+            ->count();
+
+        return $acceptedBloodSamples + $completedEmergencyDonations;
     }
 
-    /**
-     * Recalculate the donor's badge information.
-     *
-     * Only accepted blood donations count.
-     */
     public function updateBadge(): void
     {
         $count = $this->successfulDonationCount();
@@ -94,9 +97,6 @@ class Donor extends Model
         ]);
     }
 
-    /**
-     * Get a human-readable donor badge name.
-     */
     public function getBadgeNameAttribute(): string
     {
         return match ($this->donor_badge) {
