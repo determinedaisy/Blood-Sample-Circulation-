@@ -38,6 +38,52 @@
 
 
         /* ==========================
+           SYSTEM ACTIONS & ALERTS
+        ========================== */
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 24px;
+        }
+
+        .ai-btn {
+            background: #ef4444;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .ai-btn:active {
+            transform: translateY(0);
+        }
+
+
+        /* ==========================
            STATISTIC CARDS
         ========================== */
 
@@ -231,6 +277,15 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
+            
+            .action-bar {
+                justify-content: center;
+            }
+            
+            .ai-btn {
+                width: 100%;
+                justify-content: center;
+            }
 
         }
 
@@ -240,6 +295,25 @@
 
     <div class="admin-dashboard">
 
+        {{-- ==========================
+             SYSTEM ALERTS & ACTIONS
+        ========================== --}}
+        
+        @if(session('success'))
+            <div class="alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="action-bar">
+            <form action="{{ route('admin.run-ai-analysis') }}" method="POST">
+                @csrf
+                <button type="submit" class="ai-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Run Automatic Blood & Donor Analysis
+                </button>
+            </form>
+        </div>
 
         {{-- ==========================
              STATISTICS

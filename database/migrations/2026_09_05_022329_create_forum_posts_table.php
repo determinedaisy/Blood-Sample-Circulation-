@@ -11,17 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('forum_posts', function (Blueprint $table) {
+        Schema::create('forum_posts', function (Blueprint $table) {
+            $table->id();
+            
             $table->foreignId('user_id')
-                ->after('id')
                 ->constrained('users')
                 ->cascadeOnDelete();
 
-            $table->string('title')->after('user_id');
-
-            $table->text('content')->after('title');
-
-            $table->string('image')->nullable()->after('content');
+            $table->string('title');
+            $table->text('content');
+            $table->string('image')->nullable();
+            
+            $table->timestamps();
         });
     }
 
@@ -30,14 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('forum_posts', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropColumn([
-                'user_id',
-                'title',
-                'content',
-                'image',
-            ]);
-        });
+        Schema::dropIfExists('forum_posts');
     }
 };

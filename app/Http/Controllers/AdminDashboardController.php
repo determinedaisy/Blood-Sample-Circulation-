@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BloodSample;
+use App\Services\BloodAnalyzerService; // Added AI Service Import
 
 class AdminDashboardController extends Controller
 {
@@ -97,5 +98,18 @@ class AdminDashboardController extends Controller
             'dailyValues',
             'recentSamples'
         ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Blood Analysis Feature
+    |--------------------------------------------------------------------------
+    */
+    public function runAiAnalysis(BloodAnalyzerService $analyzer)
+    {
+        $analyzer->analyzeInventory();
+        $analyzer->analyzeDonors();
+        
+        return redirect()->back()->with('success', 'AI Analysis Complete: Expired units and deferred donors are now blacklisted.');
     }
 }

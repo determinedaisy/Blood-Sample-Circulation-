@@ -61,6 +61,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
         ->name('admin.dashboard');
 
+    Route::post('/admin/run-ai-analysis', [AdminDashboardController::class, 'runAiAnalysis'])
+        ->name('admin.run-ai-analysis');
+
     Route::get('/admin/reports', [AdministrativeReportController::class, 'index'])
         ->name('admin.reports.index');
 
