@@ -189,6 +189,7 @@ Route::middleware(['auth'])->group(function () {
         [HomeCollectionController::class, 'assignLabStaff']
     )->name('home-collections.assign-lab-staff');
 
+
     /*
     |--------------------------------------------------------------------------
     | Legacy Transportation Route
@@ -199,6 +200,23 @@ Route::middleware(['auth'])->group(function () {
         '/admin/home-collections/{homeCollection}/send-to-laboratory',
         [HomeCollectionController::class, 'sendToLaboratory']
     )->name('home-collections.send-to-laboratory');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inventory Creation
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/inventory/create',
+        [InventoryController::class, 'create']
+    )->middleware('auth')->name('inventory.create');
+
+    Route::post(
+        '/inventory',
+        [InventoryController::class, 'store']
+    )->middleware('auth')->name('inventory.store');
 
 
     /*
@@ -594,5 +612,6 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
 });
+
 
 require __DIR__.'/auth.php';

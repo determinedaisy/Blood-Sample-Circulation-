@@ -838,9 +838,23 @@
 
                                     borderRadius: 5
 
-                                }]
 
-                            },
+
+            boxWidth: 30,
+
+            boxHeight: 10,
+
+            padding: 10,
+
+            font: {
+                size: 12
+            }
+
+        }
+
+    }
+
+},
 
 
                             options: {
