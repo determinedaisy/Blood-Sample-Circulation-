@@ -37,7 +37,7 @@
                         >
                     </div>
                     <button class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                        Apply Date
+                       Apply Date
                     </button>
                 </form>
             </div>

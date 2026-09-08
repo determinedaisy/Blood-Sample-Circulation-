@@ -5,20 +5,10 @@
                     <span class="font-extrabold">Payment Error:</span> {{ session('error') }}
                 </div>
             </div>
-        @endif
-
-        @if(session('success'))
-            <div class="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
-                <div class="p-4 mb-4 text-sm text-green-800 rounded-xl bg-green-50 border border-green-200 shadow-sm" role="alert">
-                    <span class="font-extrabold">Success:</span> {{ session('success') }}
-                </div>
-            </div>
-        @endif
-
+  @endif
     <x-slot name="header">
         <div class="flex items-center justify-between">
-
-            <div>
+             <div>
                 <h2 class="text-2xl font-bold text-gray-900">
                     My Blood Samples
                 </h2>
