@@ -15,11 +15,11 @@ class BkashService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.bkash.base_url');
-        $this->appKey = config('services.bkash.app_key');
-        $this->appSecret = config('services.bkash.app_secret');
-        $this->username = config('services.bkash.username');
-        $this->password = config('services.bkash.password');
+        $this->baseUrl = (string) config('services.bkash.base_url', '');
+$this->appKey = (string) config('services.bkash.app_key', '');
+$this->appSecret = (string) config('services.bkash.app_secret', '');
+$this->username = (string) config('services.bkash.username', '');
+$this->password = (string) config('services.bkash.password', '');
     }
 
     /**

@@ -566,6 +566,15 @@ Route::middleware(['auth'])->group(function () {
     )->name('bkash.callback');
 
 
+    Route::get('/payment/bkash/mock/{payment}', [\App\Http\Controllers\PaymentController::class, 'mockCheckout'])
+        ->name('bkash.mock.checkout');
+
+    Route::post('/payment/bkash/mock/{payment}/confirm', [\App\Http\Controllers\PaymentController::class, 'mockConfirm'])
+        ->name('bkash.mock.confirm');
+
+    Route::post('/payment/bkash/mock/{payment}/cancel', [\App\Http\Controllers\PaymentController::class, 'mockCancel'])
+        ->name('bkash.mock.cancel');
+
     /*
     |--------------------------------------------------------------------------
     | Forum
