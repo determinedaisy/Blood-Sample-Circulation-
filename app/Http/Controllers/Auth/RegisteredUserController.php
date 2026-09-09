@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -28,26 +29,51 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. Validate the request (STRICTLY locks out admins)
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', 'in:patient,doctor'], // Admin is securely removed
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                'unique:' . User::class,
+            ],
+            'password' => [
+                'required',
+                'confirmed',
+                Rules\Password::defaults(),
+            ],
+            'role' => [
+                'required',
+                'string',
+                'in:patient,doctor',
+            ],
         ]);
 
-        // 2. Create the user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role, 
+            'role' => $request->role,
         ]);
 
-        // 3. Trigger the registration event
+        /*
+         * Every newly registered patient automatically gets
+         * a patient profile.
+         */
+        if ($user->role === 'patient') {
+            Patient::create([
+                'user_id' => $user->id,
+            ]);
+        }
+
         event(new Registered($user));
 
-        // 4. Redirect them to the login page with a success message (No auto-login)
-        return redirect('/login')->with('status', 'Account created successfully! Please log in with your new credentials.');
+        return redirect('/login')->with(
+            'status',
+            'Account created successfully! Please log in with your new credentials.'
+        );
     }
 }
+
