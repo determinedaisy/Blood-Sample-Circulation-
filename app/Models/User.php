@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -21,17 +19,14 @@ use Illuminate\Notifications\Notifiable;
     'shop_discount',
     'donor_priority',
 ])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden([
+    'password',
+    'remember_token',
+])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -45,11 +40,6 @@ class User extends Authenticatable
         return $this->hasOne(DoctorProfile::class);
     }
 
-    public function donorReviews()
-    {
-        return $this->hasMany(DonorReview::class, 'donor_id');
-    }
-
     public function patientProfile()
     {
         return $this->hasOne(Patient::class, 'user_id');
@@ -60,9 +50,24 @@ class User extends Authenticatable
         return $this->hasOne(Donor::class, 'user_id');
     }
 
+    public function donorReviews()
+    {
+        return $this->hasMany(DonorReview::class, 'donor_id');
+    }
+
     public function doctorReviews()
     {
         return $this->hasMany(DonorReview::class, 'doctor_id');
+    }
+
+    public function donorApplications()
+    {
+        return $this->hasMany(DonorApplication::class, 'patient_id');
+    }
+
+    public function reviewedDonorApplications()
+    {
+        return $this->hasMany(DonorApplication::class, 'doctor_id');
     }
 
     public function sampleRequests()
@@ -75,17 +80,11 @@ class User extends Authenticatable
         return $this->hasMany(SampleRequest::class, 'requested_by');
     }
 
-    /**
-     * Get all blood donations made by this user.
-     */
     public function bloodDonations()
     {
         return $this->hasMany(BloodSample::class, 'patient_id');
     }
 
-    /**
-     * Count only successfully accepted donations.
-     */
     public function successfulDonationCount(): int
     {
         return $this->bloodDonations()
@@ -93,9 +92,6 @@ class User extends Authenticatable
             ->count();
     }
 
-    /**
-     * Recalculate and save the donor badge.
-     */
     public function updateDonorBadge(): void
     {
         $count = $this->successfulDonationCount();
@@ -130,9 +126,6 @@ class User extends Authenticatable
         ]);
     }
 
-    /**
-     * Get a human-readable donor badge name.
-     */
     public function getDonorBadgeNameAttribute(): string
     {
         return match ($this->donor_badge) {
@@ -144,27 +137,19 @@ class User extends Authenticatable
         };
     }
 
-    /**
-     * Forum posts created by this user.
-     */
     public function forumPosts()
     {
         return $this->hasMany(ForumPost::class);
     }
 
-    /**
-     * Forum comments created by this user.
-     */
     public function forumComments()
     {
         return $this->hasMany(ForumComment::class);
     }
 
-    /**
-     * Forum reactions created by this user.
-     */
     public function forumReactions()
     {
         return $this->hasMany(ForumReaction::class);
     }
 }
+

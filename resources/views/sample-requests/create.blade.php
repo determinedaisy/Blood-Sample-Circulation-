@@ -1,4 +1,8 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
 <style>
     .patient-map-pin {
         align-items: center;
@@ -14,7 +18,25 @@
         transform: rotate(-45deg);
         width: 38px;
     }
-    .patient-map-pin span { transform: rotate(45deg); }
+
+    .patient-map-pin span {
+        transform: rotate(45deg);
+    }
+
+    /*
+     * Important:
+     * Leaflet needs an actual height on the map container.
+     */
+    #request-location-map {
+        height: 380px;
+        width: 100%;
+        min-height: 380px;
+        z-index: 1;
+    }
+
+    .leaflet-container {
+        font-family: inherit;
+    }
 </style>
 
 <x-app-layout>
@@ -38,7 +60,6 @@
     <div class="py-10 bg-gray-50 min-h-screen">
 
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
 
             @if($errors->any())
 
@@ -92,62 +113,60 @@
 
                     <div class="p-6 space-y-5">
 
-
                         {{-- SAMPLE TYPE --}}
 
-                       {{-- SAMPLE TYPE --}}
+                        <div>
 
-<div>
+                            <label
+                                for="sample_type"
+                                class="block text-sm font-semibold text-gray-700 mb-2"
+                            >
+                                Sample Type
+                                <span class="text-red-500">*</span>
+                            </label>
 
-    <label
-        for="sample_type"
-        class="block text-sm font-semibold text-gray-700 mb-2"
-    >
-        Sample Type
-        <span class="text-red-500">*</span>
-    </label>
+                            <select
+                                id="sample_type"
+                                name="sample_type"
+                                required
+                                class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            >
 
-    <select
-        id="sample_type"
-        name="sample_type"
-        required
-        class="w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-    >
+                                <option value="">
+                                    Select Sample Type
+                                </option>
 
-        <option value="">
-            Select Sample Type
-        </option>
+                                <option
+                                    value="Whole Blood"
+                                    {{ old('sample_type') === 'Whole Blood' ? 'selected' : '' }}
+                                >
+                                    Whole Blood
+                                </option>
 
-        <option
-            value="Whole Blood"
-            {{ old('sample_type') === 'Whole Blood' ? 'selected' : '' }}
-        >
-            Whole Blood
-        </option>
+                                <option
+                                    value="Serum"
+                                    {{ old('sample_type') === 'Serum' ? 'selected' : '' }}
+                                >
+                                    Serum
+                                </option>
 
-        <option
-            value="Serum"
-            {{ old('sample_type') === 'Serum' ? 'selected' : '' }}
-        >
-            Serum
-        </option>
+                                <option
+                                    value="Plasma"
+                                    {{ old('sample_type') === 'Plasma' ? 'selected' : '' }}
+                                >
+                                    Plasma
+                                </option>
 
-        <option
-            value="Plasma"
-            {{ old('sample_type') === 'Plasma' ? 'selected' : '' }}
-        >
-            Plasma
-        </option>
+                            </select>
 
-    </select>
+                            @error('sample_type')
+                                <div class="text-sm text-red-600 mt-1">
+                                    {{ $message }}
+                                </div>
+                            @enderror
 
-    @error('sample_type')
-        <div class="text-sm text-red-600 mt-1">
-            {{ $message }}
-        </div>
-    @enderror
+                        </div>
 
-</div>
 
                         {{-- BLOOD TYPE --}}
 
@@ -221,7 +240,6 @@
                 </div>
 
 
-
                 {{-- ===================================================== --}}
                 {{-- COLLECTION METHOD --}}
                 {{-- ===================================================== --}}
@@ -244,7 +262,6 @@
                     <div class="p-6">
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
 
                             {{-- NORMAL COLLECTION --}}
 
@@ -276,7 +293,6 @@
                                 </p>
 
                             </label>
-
 
 
                             {{-- HOME COLLECTION --}}
@@ -326,7 +342,6 @@
                 </div>
 
 
-
                 {{-- ===================================================== --}}
                 {{-- HOME COLLECTION DETAILS --}}
                 {{-- ===================================================== --}}
@@ -363,7 +378,6 @@
 
                     <div class="p-6 space-y-5">
 
-
                         {{-- ADDRESS --}}
 
                         <div>
@@ -386,17 +400,17 @@
                             >
 
                             @error('address')
+
                                 <div class="text-sm text-red-600 mt-1">
                                     {{ $message }}
                                 </div>
+
                             @enderror
 
                         </div>
 
 
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
 
                             {{-- DATE --}}
 
@@ -420,13 +434,14 @@
                                 >
 
                                 @error('preferred_date')
+
                                     <div class="text-sm text-red-600 mt-1">
                                         {{ $message }}
                                     </div>
+
                                 @enderror
 
                             </div>
-
 
 
                             {{-- TIME --}}
@@ -475,15 +490,16 @@
                                 </select>
 
                                 @error('preferred_time')
+
                                     <div class="text-sm text-red-600 mt-1">
                                         {{ $message }}
                                     </div>
+
                                 @enderror
 
                             </div>
 
                         </div>
-
 
 
                         {{-- INSTRUCTIONS --}}
@@ -508,8 +524,9 @@
                         </div>
 
 
-
-                        {{-- GPS --}}
+                        {{-- ===================================================== --}}
+                        {{-- GPS LOCATION --}}
+                        {{-- ===================================================== --}}
 
                         <div class="overflow-hidden rounded-2xl border border-purple-200 bg-purple-50">
 
@@ -542,12 +559,30 @@
 
                             </div>
 
+
                             <div class="bg-white p-3">
-                                <div id="request-location-map" class="h-[380px] w-full rounded-xl bg-gray-200"></div>
+
+                                <div
+                                    id="request-location-map"
+                                    class="w-full rounded-xl bg-gray-200"
+                                ></div>
+
                                 <div class="mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-500">
-                                    <span id="selected-coordinates">No map pin selected.</span>
-                                    <button type="button" id="clear-map-pin" class="hidden font-semibold text-purple-700 hover:text-purple-900">Clear pin</button>
+
+                                    <span id="selected-coordinates">
+                                        No map pin selected.
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        id="clear-map-pin"
+                                        class="hidden font-semibold text-purple-700 hover:text-purple-900"
+                                    >
+                                        Clear pin
+                                    </button>
+
                                 </div>
+
                             </div>
 
 
@@ -570,7 +605,6 @@
                     </div>
 
                 </div>
-
 
 
                 {{-- ===================================================== --}}
@@ -603,156 +637,444 @@
     </div>
 
 
+    {{-- ===================================================== --}}
+    {{-- LEAFLET JAVASCRIPT --}}
+    {{-- ===================================================== --}}
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
 
         let requestLocationMap = null;
         let requestLocationMarker = null;
 
+
+        /*
+         * Custom purple map pin.
+         */
         function mapPinIcon() {
+
             return L.divIcon({
+
                 className: '',
+
                 html: '<div class="patient-map-pin"><span>●</span></div>',
+
                 iconSize: [38, 38],
+
                 iconAnchor: [19, 38]
+
             });
+
         }
 
+
+        /*
+         * Set / update selected location.
+         */
         function setMapLocation(latitude, longitude, accuracy = null) {
+
             const lat = Number(latitude);
             const lng = Number(longitude);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-            document.getElementById('latitude').value = lat.toFixed(7);
-            document.getElementById('longitude').value = lng.toFixed(7);
-
-            if (!requestLocationMarker) {
-                requestLocationMarker = L.marker([lat, lng], {
-                    draggable: true,
-                    icon: mapPinIcon()
-                }).addTo(requestLocationMap);
-
-                requestLocationMarker.on('dragend', function () {
-                    const point = requestLocationMarker.getLatLng();
-                    setMapLocation(point.lat, point.lng);
-                });
-            } else {
-                requestLocationMarker.setLatLng([lat, lng]);
+            if (
+                !Number.isFinite(lat) ||
+                !Number.isFinite(lng)
+            ) {
+                return;
             }
 
-            requestLocationMap.setView([lat, lng], 17);
-            document.getElementById('selected-coordinates').textContent =
-                'Selected: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
-            document.getElementById('clear-map-pin').classList.remove('hidden');
 
-            const status = document.getElementById('location-status');
-            status.textContent = accuracy
-                ? '✓ GPS found (about ' + Math.round(accuracy) + ' metres accuracy). Drag the pin if needed.'
-                : '✓ Map pin selected. Drag it to your exact entrance.';
-        }
+            document.getElementById('latitude').value =
+                lat.toFixed(7);
 
-        function initializeRequestMap() {
-            requestLocationMap = L.map('request-location-map').setView([23.8103, 90.4125], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(requestLocationMap);
+            document.getElementById('longitude').value =
+                lng.toFixed(7);
 
-            requestLocationMap.on('click', function (event) {
-                setMapLocation(event.latlng.lat, event.latlng.lng);
-            });
 
-            const oldLatitude = document.getElementById('latitude').value;
-            const oldLongitude = document.getElementById('longitude').value;
-            if (oldLatitude && oldLongitude) setMapLocation(oldLatitude, oldLongitude);
+            /*
+             * Create marker if it doesn't exist.
+             */
+            if (!requestLocationMarker) {
 
-            document.getElementById('clear-map-pin').addEventListener('click', function () {
-                document.getElementById('latitude').value = '';
-                document.getElementById('longitude').value = '';
-                document.getElementById('selected-coordinates').textContent = 'No map pin selected.';
-                document.getElementById('location-status').textContent =
-                    'Click the map to drop a pin, or use your current location.';
-                this.classList.add('hidden');
-                if (requestLocationMarker) {
-                    requestLocationMap.removeLayer(requestLocationMarker);
-                    requestLocationMarker = null;
+                requestLocationMarker = L.marker(
+                    [lat, lng],
+                    {
+                        draggable: true,
+                        icon: mapPinIcon()
+                    }
+                ).addTo(requestLocationMap);
+
+
+                /*
+                 * Update coordinates when user drags marker.
+                 */
+                requestLocationMarker.on(
+                    'dragend',
+                    function () {
+
+                        const point =
+                            requestLocationMarker.getLatLng();
+
+                        setMapLocation(
+                            point.lat,
+                            point.lng
+                        );
+
+                    }
+                );
+
+            } else {
+
+                requestLocationMarker.setLatLng(
+                    [lat, lng]
+                );
+
+            }
+
+
+            /*
+             * Move map to selected location.
+             */
+            requestLocationMap.setView(
+                [lat, lng],
+                17,
+                {
+                    animate: true
                 }
-            });
-        }
-
-        function updateCollectionMethod() {
-
-            const selected = document.querySelector(
-                'input[name="collection_method"]:checked'
             );
 
+
+            document.getElementById(
+                'selected-coordinates'
+            ).textContent =
+                'Selected: ' +
+                lat.toFixed(6) +
+                ', ' +
+                lng.toFixed(6);
+
+
+            document.getElementById(
+                'clear-map-pin'
+            ).classList.remove('hidden');
+
+
+            const status =
+                document.getElementById('location-status');
+
+
+            if (accuracy !== null) {
+
+                status.textContent =
+                    '✓ GPS found (about ' +
+                    Math.round(accuracy) +
+                    ' metres accuracy). Drag the pin if needed.';
+
+            } else {
+
+                status.textContent =
+                    '✓ Map pin selected. Drag it to your exact entrance.';
+
+            }
+
+        }
+
+
+        /*
+         * Initialize Leaflet map.
+         */
+        function initializeRequestMap() {
+
+            const mapElement =
+                document.getElementById(
+                    'request-location-map'
+                );
+
+
+            if (!mapElement) {
+                return;
+            }
+
+
+            /*
+             * Prevent duplicate initialization.
+             */
+            if (requestLocationMap) {
+                return;
+            }
+
+
+            /*
+             * Default location: Dhaka.
+             */
+            requestLocationMap =
+                L.map(
+                    'request-location-map',
+                    {
+                        zoomControl: true
+                    }
+                ).setView(
+                    [23.8103, 90.4125],
+                    12
+                );
+
+
+            /*
+             * OpenStreetMap tiles.
+             */
+            L.tileLayer(
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                {
+                    maxZoom: 19,
+
+                    attribution:
+                        '&copy; OpenStreetMap contributors'
+                }
+            ).addTo(requestLocationMap);
+
+
+            /*
+             * Click anywhere on map to select location.
+             */
+            requestLocationMap.on(
+                'click',
+                function (event) {
+
+                    setMapLocation(
+                        event.latlng.lat,
+                        event.latlng.lng
+                    );
+
+                }
+            );
+
+
+            /*
+             * Restore old coordinates after
+             * validation failure.
+             */
+            const oldLatitude =
+                document.getElementById('latitude').value;
+
+            const oldLongitude =
+                document.getElementById('longitude').value;
+
+
+            if (
+                oldLatitude &&
+                oldLongitude
+            ) {
+
+                setMapLocation(
+                    oldLatitude,
+                    oldLongitude
+                );
+
+            }
+
+
+            /*
+             * Clear selected pin.
+             */
+            document
+                .getElementById('clear-map-pin')
+                .addEventListener(
+                    'click',
+                    function () {
+
+                        document.getElementById(
+                            'latitude'
+                        ).value = '';
+
+                        document.getElementById(
+                            'longitude'
+                        ).value = '';
+
+
+                        document.getElementById(
+                            'selected-coordinates'
+                        ).textContent =
+                            'No map pin selected.';
+
+
+                        document.getElementById(
+                            'location-status'
+                        ).textContent =
+                            'Click the map to drop a pin, or use your current location.';
+
+
+                        this.classList.add('hidden');
+
+
+                        if (requestLocationMarker) {
+
+                            requestLocationMap.removeLayer(
+                                requestLocationMarker
+                            );
+
+                            requestLocationMarker = null;
+
+                        }
+
+                    }
+                );
+
+
+            /*
+             * Give Leaflet time to calculate its size.
+             */
+            setTimeout(
+                function () {
+
+                    requestLocationMap.invalidateSize();
+
+                },
+                300
+            );
+
+        }
+
+
+        /*
+         * Show/hide home collection fields.
+         */
+        function updateCollectionMethod() {
+
+            const selected =
+                document.querySelector(
+                    'input[name="collection_method"]:checked'
+                );
+
+
             const homeFields =
-                document.getElementById('home-collection-fields');
+                document.getElementById(
+                    'home-collection-fields'
+                );
+
 
             const homeOption =
-                document.getElementById('home-option');
+                document.getElementById(
+                    'home-option'
+                );
+
 
             const centerOption =
-                document.getElementById('center-option');
+                document.getElementById(
+                    'center-option'
+                );
+
 
             const address =
-                document.getElementById('address');
+                document.getElementById(
+                    'address'
+                );
+
 
             const preferredDate =
-                document.getElementById('preferred_date');
+                document.getElementById(
+                    'preferred_date'
+                );
+
 
             const preferredTime =
-                document.getElementById('preferred_time');
+                document.getElementById(
+                    'preferred_time'
+                );
 
 
-            if (selected && selected.value === 'home') {
+            if (
+                selected &&
+                selected.value === 'home'
+            ) {
 
-                homeFields.classList.remove('hidden');
+                homeFields.classList.remove(
+                    'hidden'
+                );
+
 
                 homeOption.classList.add(
                     'border-purple-500',
                     'bg-purple-50'
                 );
 
+
                 centerOption.classList.remove(
                     'border-blue-500',
                     'bg-blue-50'
                 );
 
+
                 address.required = true;
+
                 preferredDate.required = true;
+
                 preferredTime.required = true;
 
-                window.setTimeout(function () {
-                    if (requestLocationMap) requestLocationMap.invalidateSize();
-                }, 100);
+
+                /*
+                 * Leaflet maps can render incorrectly when
+                 * their parent is hidden during initialization.
+                 */
+                setTimeout(
+                    function () {
+
+                        if (requestLocationMap) {
+
+                            requestLocationMap.invalidateSize();
+
+                        }
+
+                    },
+                    200
+                );
+
 
             } else {
 
-                homeFields.classList.add('hidden');
+                homeFields.classList.add(
+                    'hidden'
+                );
+
 
                 centerOption.classList.add(
                     'border-blue-500',
                     'bg-blue-50'
                 );
 
+
                 homeOption.classList.remove(
                     'border-purple-500',
                     'bg-purple-50'
                 );
 
+
                 address.required = false;
+
                 preferredDate.required = false;
+
                 preferredTime.required = false;
+
             }
+
         }
 
 
+        /*
+         * Get user's current GPS location.
+         */
         function getCurrentLocation() {
 
             const status =
-                document.getElementById('location-status');
+                document.getElementById(
+                    'location-status'
+                );
+
+
+            const button =
+                document.getElementById(
+                    'current-location-button'
+                );
+
 
             if (!navigator.geolocation) {
 
@@ -760,52 +1082,208 @@
                     'Geolocation is not supported by this browser.';
 
                 return;
+
             }
 
 
             status.textContent =
-                'Getting your location...';
+                'Getting your current GPS location...';
+
+
+            button.disabled = true;
+
+            button.textContent =
+                'Finding location...';
 
 
             navigator.geolocation.getCurrentPosition(
 
-                function(position) {
-
-                    document.getElementById('latitude').value =
-                        position.coords.latitude;
+                function (position) {
 
                     setMapLocation(
+
                         position.coords.latitude,
+
                         position.coords.longitude,
+
                         position.coords.accuracy
+
                     );
+
+
+                    button.disabled = false;
+
+                    button.textContent =
+                        'Use Current Location';
+
                 },
 
-                function() {
+
+                function (error) {
+
+                    button.disabled = false;
+
+                    button.textContent =
+                        'Use Current Location';
+
+
+                    let message =
+                        'Could not access GPS. ';
+
+
+                    switch (error.code) {
+
+                        case error.PERMISSION_DENIED:
+
+                            message +=
+                                'Location permission was denied. Please allow location access in your browser, or click your location on the map.';
+
+                            break;
+
+
+                        case error.POSITION_UNAVAILABLE:
+
+                            message +=
+                                'Your location is currently unavailable. Click your location on the map instead.';
+
+                            break;
+
+
+                        case error.TIMEOUT:
+
+                            message +=
+                                'The GPS request timed out. Please try again or click your location on the map.';
+
+                            break;
+
+
+                        default:
+
+                            message +=
+                                'Click your location on the map instead.';
+
+                    }
+
 
                     status.textContent =
-                        'Could not access GPS. Click your exact location on the map instead.';
+                        message;
+
+                },
+
+                {
+                    enableHighAccuracy: true,
+
+                    timeout: 15000,
+
+                    maximumAge: 0
+
                 }
 
             );
+
         }
 
 
-        document.addEventListener('DOMContentLoaded', function () {
-            initializeRequestMap();
-            updateCollectionMethod();
+        /*
+         * Page initialization.
+         */
+        document.addEventListener(
+            'DOMContentLoaded',
+            function () {
 
-            document.getElementById('sample-request-form').addEventListener('submit', function (event) {
-                const selected = document.querySelector('input[name="collection_method"]:checked');
-                if (selected?.value === 'home'
-                    && (!document.getElementById('latitude').value || !document.getElementById('longitude').value)) {
-                    event.preventDefault();
-                    document.getElementById('location-status').textContent =
-                        'Please click your home on the map or use your current GPS before submitting.';
-                    document.getElementById('request-location-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
-        });
+                initializeRequestMap();
+
+                updateCollectionMethod();
+
+
+                /*
+                 * Validate GPS before submitting
+                 * a home collection request.
+                 */
+                document
+                    .getElementById(
+                        'sample-request-form'
+                    )
+                    .addEventListener(
+                        'submit',
+                        function (event) {
+
+                            const selected =
+                                document.querySelector(
+                                    'input[name="collection_method"]:checked'
+                                );
+
+
+                            if (
+                                selected &&
+                                selected.value === 'home' &&
+                                (
+                                    !document.getElementById('latitude').value ||
+                                    !document.getElementById('longitude').value
+                                )
+                            ) {
+
+                                event.preventDefault();
+
+
+                                document.getElementById(
+                                    'location-status'
+                                ).textContent =
+                                    'Please click your home on the map or use your current GPS before submitting.';
+
+
+                                document.getElementById(
+                                    'home-collection-fields'
+                                ).scrollIntoView(
+                                    {
+                                        behavior: 'smooth',
+                                        block: 'center'
+                                    }
+                                );
+
+
+                                /*
+                                 * Make sure map is correctly
+                                 * rendered after scrolling.
+                                 */
+                                setTimeout(
+                                    function () {
+
+                                        if (requestLocationMap) {
+
+                                            requestLocationMap.invalidateSize();
+
+                                        }
+
+                                    },
+                                    500
+                                );
+
+                            }
+
+                        }
+                    );
+
+
+                /*
+                 * Fix map rendering if browser window
+                 * changes size.
+                 */
+                window.addEventListener(
+                    'resize',
+                    function () {
+
+                        if (requestLocationMap) {
+
+                            requestLocationMap.invalidateSize();
+
+                        }
+
+                    }
+                );
+
+            }
+        );
 
     </script>
 

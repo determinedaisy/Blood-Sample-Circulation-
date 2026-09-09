@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\AdminDashboardController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\EquipmentOrderController;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\HomeCollectionController;
+use App\Http\Controllers\DonorApplicationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LaboratoryCapacityController;
 use App\Http\Controllers\PatientBloodSampleController;
@@ -222,6 +224,28 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Doctor - Donor Applications
+    |--------------------------------------------------------------------------
+    |
+    | Doctors can see patient requests to donate blood or request blood.
+    | The doctor can open the application and approve or reject it.
+    |
+    */
+
+    Route::get('/doctor/donor-applications', [DonorApplicationController::class, 'doctorIndex'])
+        ->name('donor-applications.doctor.index');
+
+    Route::get('/doctor/donor-applications/{donorApplication}', [DonorApplicationController::class, 'doctorShow'])
+        ->name('donor-applications.doctor.show');
+
+    Route::patch('/doctor/donor-applications/{donorApplication}/approve', [DonorApplicationController::class, 'approve'])
+        ->name('donor-applications.approve');
+
+    Route::patch('/doctor/donor-applications/{donorApplication}/reject', [DonorApplicationController::class, 'reject'])
+        ->name('donor-applications.reject');
+
+    /*
+    |--------------------------------------------------------------------------
     | Reception Requests
     |--------------------------------------------------------------------------
     */
@@ -306,6 +330,28 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Patient - Donor Applications
+    |--------------------------------------------------------------------------
+    |
+    | Patients can submit a request to donate blood or request blood.
+    | They can also see the status and doctor's response.
+    |
+    */
+
+    Route::get('/donor-applications', [DonorApplicationController::class, 'index'])
+        ->name('donor-applications.index');
+
+    Route::get('/donor-applications/create', [DonorApplicationController::class, 'create'])
+        ->name('donor-applications.create');
+
+    Route::post('/donor-applications', [DonorApplicationController::class, 'store'])
+        ->name('donor-applications.store');
+
+    Route::get('/donor-applications/{donorApplication}', [DonorApplicationController::class, 'show'])
+        ->name('donor-applications.show');
+
+    /*
+    |--------------------------------------------------------------------------
     | Emergency SOS
     |--------------------------------------------------------------------------
     */
@@ -318,6 +364,17 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/sos/results', [EmergencySOSController::class, 'results'])
         ->name('sos.results');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Existing SOS Donor Requests
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | This is separate from the new doctor-reviewed donor application
+    | system above.
+    |
+    */
 
     Route::post('/donor-request/{donor}', [DonorRequestController::class, 'store'])
         ->name('donor.request');
@@ -483,3 +540,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+

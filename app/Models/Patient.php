@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Patient extends Model
 {
@@ -28,7 +29,16 @@ class Patient extends Model
     }
 
     public function emergencyRequests()
-{
-    return $this->hasMany(EmergencyRequest::class);
-}
+    {
+        return $this->hasMany(EmergencyRequest::class);
+    }
+
+    /**
+     * Donor and blood-request applications
+     * submitted by this patient.
+     */
+    public function donorApplications(): HasMany
+    {
+        return $this->hasMany(DonorApplication::class);
+    }
 }
