@@ -1,8 +1,9 @@
+
 <x-app-layout>
 
     <x-slot name="header">
 
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-4">
 
             <div>
 
@@ -16,12 +17,20 @@
 
             </div>
 
-
+            {{-- NEW REQUEST --}}
             <a
                 href="{{ route('sample-requests.create') }}"
-                class="px-5 py-2.5 rounded-lg
+                class="inline-flex items-center justify-center
+                       px-5 py-2.5 rounded-lg
                        bg-blue-600 text-white
-                       font-semibold hover:bg-blue-700"
+                       font-semibold
+                       shadow-sm
+                       hover:bg-blue-700
+                       focus:outline-none
+                       focus:ring-2
+                       focus:ring-blue-500
+                       focus:ring-offset-2
+                       whitespace-nowrap"
             >
                 + New Request
             </a>
@@ -75,7 +84,20 @@
                 @if($requests->isEmpty())
 
 
-                    <div class="py-16 text-center">
+                    {{-- EMPTY STATE --}}
+                    <div class="py-16 px-6 text-center">
+
+                        <div
+                            class="mx-auto mb-5
+                                   w-14 h-14
+                                   flex items-center justify-center
+                                   rounded-full
+                                   bg-blue-50
+                                   text-blue-600
+                                   text-2xl"
+                        >
+                            +
+                        </div>
 
                         <h3 class="text-lg font-semibold text-gray-900">
                             No sample requests yet
@@ -84,6 +106,29 @@
                         <p class="text-gray-500 mt-2">
                             Submit your first blood sample request.
                         </p>
+
+                        {{-- NEW REQUEST BUTTON --}}
+                        <div class="mt-6">
+
+                            <a
+                                href="{{ route('sample-requests.create') }}"
+                                class="inline-flex items-center justify-center
+                                       px-6 py-3
+                                       rounded-lg
+                                       bg-blue-600
+                                       text-white
+                                       font-semibold
+                                       shadow-sm
+                                       hover:bg-blue-700
+                                       focus:outline-none
+                                       focus:ring-2
+                                       focus:ring-blue-500
+                                       focus:ring-offset-2"
+                            >
+                                + New Request
+                            </a>
+
+                        </div>
 
                     </div>
 
@@ -103,84 +148,39 @@
 
                                 <tr>
 
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Requested
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Requested By
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Sample
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Blood Type
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Request Status
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Sample Code
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Current Progress
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700
-                                               min-w-[220px]"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700 min-w-[220px]">
                                         Collection
                                     </th>
 
-
-                                    <th
-                                        class="px-5 py-4 text-left
-                                               text-sm font-semibold
-                                               text-gray-700"
-                                    >
+                                    <th class="px-5 py-4 text-left text-sm font-semibold text-gray-700">
                                         Tracking
                                     </th>
 
@@ -340,6 +340,7 @@
 
                                             $progress =
                                                 'Waiting for Approval';
+
                                         }
 
                                     @endphp
@@ -351,22 +352,15 @@
                                         {{-- REQUEST DATE --}}
                                         <td class="px-5 py-5 whitespace-nowrap">
 
-                                            {{ $request
-                                                ->created_at
-                                                ->format('d M Y') }}
+                                            {{ $request->created_at->format('d M Y') }}
 
-                                            <div
-                                                class="text-sm
-                                                       text-gray-500
-                                                       mt-1"
-                                            >
-                                                {{ $request
-                                                    ->created_at
-                                                    ->format('h:i A') }}
+                                            <div class="text-sm text-gray-500 mt-1">
+
+                                                {{ $request->created_at->format('h:i A') }}
+
                                             </div>
 
                                         </td>
-
 
 
                                         {{-- REQUESTED BY --}}
@@ -378,45 +372,27 @@
                                                 (int) $request->patient_id
                                             )
 
-                                                <span
-                                                    class="font-semibold
-                                                           text-gray-900"
-                                                >
+                                                <span class="font-semibold text-gray-900">
                                                     Self
                                                 </span>
 
-                                                <div
-                                                    class="text-xs
-                                                           text-gray-500
-                                                           mt-1"
-                                                >
+                                                <div class="text-xs text-gray-500 mt-1">
                                                     You created this request
                                                 </div>
 
                                             @else
 
-                                                <span
-                                                    class="font-semibold
-                                                           text-gray-900"
-                                                >
+                                                <span class="font-semibold text-gray-900">
                                                     Receptionist
                                                 </span>
 
-                                                <div
-                                                    class="text-xs
-                                                           text-gray-500
-                                                           mt-1"
-                                                >
-                                                    {{ $request
-                                                        ->requester
-                                                        ->name
-                                                        ?? 'Receptionist' }}
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    {{ $request->requester->name ?? 'Receptionist' }}
                                                 </div>
 
                                             @endif
 
                                         </td>
-
 
 
                                         {{-- SAMPLE TYPE --}}
@@ -429,88 +405,39 @@
                                         </td>
 
 
-
                                         {{-- BLOOD TYPE --}}
                                         <td class="px-5 py-5">
 
-                                            {{ $request->blood_type
-                                                ?? 'Not specified' }}
+                                            {{ $request->blood_type ?? 'Not specified' }}
 
                                         </td>
-
 
 
                                         {{-- REQUEST STATUS --}}
                                         <td class="px-5 py-5">
 
-                                            @if(
-                                                $request->status
-                                                ===
-                                                'pending'
-                                            )
+                                            @if($request->status === 'pending')
 
-                                                <span
-                                                    class="inline-flex
-                                                           px-3 py-1
-                                                           rounded-full
-                                                           bg-yellow-100
-                                                           text-yellow-800
-                                                           text-sm
-                                                           font-semibold"
-                                                >
+                                                <span class="inline-flex px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-semibold">
                                                     Pending
                                                 </span>
 
-                                            @elseif(
-                                                $request->status
-                                                ===
-                                                'approved'
-                                            )
+                                            @elseif($request->status === 'approved')
 
-                                                <span
-                                                    class="inline-flex
-                                                           px-3 py-1
-                                                           rounded-full
-                                                           bg-green-100
-                                                           text-green-800
-                                                           text-sm
-                                                           font-semibold"
-                                                >
+                                                <span class="inline-flex px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-semibold">
                                                     Approved
                                                 </span>
 
-                                            @elseif(
-                                                $request->status
-                                                ===
-                                                'declined'
-                                            )
+                                            @elseif($request->status === 'declined')
 
-                                                <span
-                                                    class="inline-flex
-                                                           px-3 py-1
-                                                           rounded-full
-                                                           bg-red-100
-                                                           text-red-800
-                                                           text-sm
-                                                           font-semibold"
-                                                >
+                                                <span class="inline-flex px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-semibold">
                                                     Declined
                                                 </span>
 
                                             @else
 
-                                                <span
-                                                    class="inline-flex
-                                                           px-3 py-1
-                                                           rounded-full
-                                                           bg-gray-100
-                                                           text-gray-700
-                                                           text-sm
-                                                           font-semibold"
-                                                >
-                                                    {{ ucfirst(
-                                                        $request->status
-                                                    ) }}
+                                                <span class="inline-flex px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold">
+                                                    {{ ucfirst($request->status) }}
                                                 </span>
 
                                             @endif
@@ -518,207 +445,98 @@
                                         </td>
 
 
-
                                         {{-- SAMPLE CODE --}}
-                                        <td
-                                            class="px-5 py-5
-                                                   font-semibold
-                                                   text-gray-900"
-                                        >
+                                        <td class="px-5 py-5 font-semibold text-gray-900">
 
-                                            {{ $bloodSample
-                                                ->sample_code
-                                                ?? 'Not created yet' }}
+                                            {{ $bloodSample->sample_code ?? 'Not created yet' }}
 
                                         </td>
-
 
 
                                         {{-- CURRENT PROGRESS --}}
                                         <td class="px-5 py-5">
 
-                                            @if(
-                                                $progress
-                                                ===
-                                                'Sample Accepted'
-                                            )
+                                            @if($progress === 'Sample Accepted')
 
-                                                <span
-                                                    class="font-semibold
-                                                           text-green-700"
-                                                >
+                                                <span class="font-semibold text-green-700">
                                                     ✓ Sample Accepted
                                                 </span>
 
-
                                             @elseif(
-                                                $progress
-                                                ===
-                                                'Sample Rejected'
+                                                $progress === 'Sample Rejected'
                                                 ||
-                                                $progress
-                                                ===
-                                                'Request Declined'
+                                                $progress === 'Request Declined'
                                             )
 
-                                                <span
-                                                    class="font-semibold
-                                                           text-red-700"
-                                                >
+                                                <span class="font-semibold text-red-700">
                                                     {{ $progress }}
                                                 </span>
 
+                                            @elseif($progress === 'Delivered')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Delivered'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-purple-700"
-                                                >
+                                                <span class="font-semibold text-purple-700">
                                                     ✓ Delivered
                                                 </span>
 
+                                            @elseif($progress === 'In Transit')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'In Transit'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-blue-700"
-                                                >
+                                                <span class="font-semibold text-blue-700">
                                                     🚚 In Transit
                                                 </span>
 
+                                            @elseif($progress === 'Home Sample Collected')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Home Sample Collected'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-green-700"
-                                                >
+                                                <span class="font-semibold text-green-700">
                                                     ✓ Home Sample Collected
                                                 </span>
 
+                                            @elseif($progress === 'Collector Arrived')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Collector Arrived'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-purple-700"
-                                                >
+                                                <span class="font-semibold text-purple-700">
                                                     📍 Collector Arrived
                                                 </span>
 
+                                            @elseif($progress === 'Collector On The Way')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Collector On The Way'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-blue-700"
-                                                >
+                                                <span class="font-semibold text-blue-700">
                                                     🚗 Collector On The Way
                                                 </span>
 
+                                            @elseif($progress === 'Home Collector Assigned')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Home Collector Assigned'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-blue-700"
-                                                >
+                                                <span class="font-semibold text-blue-700">
                                                     Home Collector Assigned
                                                 </span>
 
+                                            @elseif($progress === 'Home Collection Requested')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Home Collection Requested'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-purple-700"
-                                                >
+                                                <span class="font-semibold text-purple-700">
                                                     🏠 Home Collection Requested
                                                 </span>
 
+                                            @elseif($progress === 'Collector Assigned')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Collector Assigned'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-yellow-700"
-                                                >
+                                                <span class="font-semibold text-yellow-700">
                                                     Collector Assigned
                                                 </span>
 
+                                                @if($transportation?->transporter)
 
-                                                @if(
-                                                    $transportation
-                                                        ?->transporter
-                                                )
-
-                                                    <div
-                                                        class="text-xs
-                                                               text-gray-500
-                                                               mt-1"
-                                                    >
-                                                        {{ $transportation
-                                                            ->transporter
-                                                            ->name }}
+                                                    <div class="text-xs text-gray-500 mt-1">
+                                                        {{ $transportation->transporter->name }}
                                                     </div>
 
                                                 @endif
 
+                                            @elseif($progress === 'Request Approved')
 
-                                            @elseif(
-                                                $progress
-                                                ===
-                                                'Request Approved'
-                                            )
-
-                                                <span
-                                                    class="font-semibold
-                                                           text-green-700"
-                                                >
+                                                <span class="font-semibold text-green-700">
                                                     Request Approved
                                                 </span>
 
-
                                             @else
 
-                                                <span
-                                                    class="font-semibold
-                                                           text-gray-600"
-                                                >
+                                                <span class="font-semibold text-gray-600">
                                                     Waiting for Approval
                                                 </span>
 
@@ -727,166 +545,76 @@
                                         </td>
 
 
-
                                         {{-- COLLECTION METHOD --}}
                                         <td class="px-5 py-5">
 
-
-                                            {{-- HOME COLLECTION EXISTS --}}
                                             @if($homeCollection)
 
-
-                                                <div
-                                                    class="rounded-xl
-                                                           border
-                                                           border-purple-200
-                                                           bg-purple-50
-                                                           p-3"
-                                                >
+                                                <div class="rounded-xl border border-purple-200 bg-purple-50 p-3">
 
                                                     <div>
 
-                                                        <span
-                                                            class="inline-flex
-                                                                   px-3 py-1
-                                                                   rounded-full
-                                                                   bg-purple-100
-                                                                   text-purple-800
-                                                                   text-xs
-                                                                   font-bold"
-                                                        >
+                                                        <span class="inline-flex px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-bold">
                                                             🏠 Home Collection
                                                         </span>
 
                                                     </div>
 
+                                                    <div class="text-sm font-semibold text-gray-900 mt-3">
 
-                                                    <div
-                                                        class="text-sm
-                                                               font-semibold
-                                                               text-gray-900
-                                                               mt-3"
-                                                    >
-                                                        {{ $homeCollection
-                                                            ->preferred_date
-                                                            ->format('d M Y') }}
+                                                        {{ $homeCollection->preferred_date->format('d M Y') }}
+
                                                     </div>
 
+                                                    <div class="text-xs text-gray-600 mt-1">
 
-                                                    <div
-                                                        class="text-xs
-                                                               text-gray-600
-                                                               mt-1"
-                                                    >
-                                                        {{ $homeCollection
-                                                            ->preferred_time }}
+                                                        {{ $homeCollection->preferred_time }}
+
                                                     </div>
 
+                                                    <div class="text-xs font-semibold mt-3">
 
-                                                    <div
-                                                        class="text-xs
-                                                               font-semibold
-                                                               mt-3"
-                                                    >
+                                                        @if($homeCollection->status === 'pending')
 
-                                                        @if(
-                                                            $homeCollection
-                                                                ->status
-                                                            ===
-                                                            'pending'
-                                                        )
-
-                                                            <span
-                                                                class="text-yellow-700"
-                                                            >
+                                                            <span class="text-yellow-700">
                                                                 Waiting for Assignment
                                                             </span>
 
+                                                        @elseif($homeCollection->status === 'assigned')
 
-                                                        @elseif(
-                                                            $homeCollection
-                                                                ->status
-                                                            ===
-                                                            'assigned'
-                                                        )
-
-                                                            <span
-                                                                class="text-blue-700"
-                                                            >
+                                                            <span class="text-blue-700">
                                                                 Collector Assigned
                                                             </span>
 
+                                                            @if($homeCollection->assignedCollector)
 
-                                                            @if(
-                                                                $homeCollection
-                                                                    ->assignedCollector
-                                                            )
-
-                                                                <div
-                                                                    class="text-gray-500
-                                                                           font-normal
-                                                                           mt-1"
-                                                                >
-                                                                    {{ $homeCollection
-                                                                        ->assignedCollector
-                                                                        ->name }}
+                                                                <div class="text-gray-500 font-normal mt-1">
+                                                                    {{ $homeCollection->assignedCollector->name }}
                                                                 </div>
 
                                                             @endif
 
+                                                        @elseif($homeCollection->status === 'on_the_way')
 
-                                                        @elseif(
-                                                            $homeCollection
-                                                                ->status
-                                                            ===
-                                                            'on_the_way'
-                                                        )
-
-                                                            <span
-                                                                class="text-blue-700"
-                                                            >
+                                                            <span class="text-blue-700">
                                                                 🚗 On The Way
                                                             </span>
 
+                                                        @elseif($homeCollection->status === 'arrived')
 
-                                                        @elseif(
-                                                            $homeCollection
-                                                                ->status
-                                                            ===
-                                                            'arrived'
-                                                        )
-
-                                                            <span
-                                                                class="text-purple-700"
-                                                            >
+                                                            <span class="text-purple-700">
                                                                 📍 Collector Arrived
                                                             </span>
 
+                                                        @elseif($homeCollection->status === 'collected')
 
-                                                        @elseif(
-                                                            $homeCollection
-                                                                ->status
-                                                            ===
-                                                            'collected'
-                                                        )
-
-                                                            <span
-                                                                class="text-green-700"
-                                                            >
+                                                            <span class="text-green-700">
                                                                 ✓ Sample Collected
                                                             </span>
 
+                                                        @elseif($homeCollection->status === 'cancelled')
 
-                                                        @elseif(
-                                                            $homeCollection
-                                                                ->status
-                                                            ===
-                                                            'cancelled'
-                                                        )
-
-                                                            <span
-                                                                class="text-red-700"
-                                                            >
+                                                            <span class="text-red-700">
                                                                 Cancelled
                                                             </span>
 
@@ -897,12 +625,8 @@
                                                 </div>
 
 
-
-                                            {{-- CAN REQUEST HOME COLLECTION --}}
                                             @elseif(
-                                                $request->status
-                                                ===
-                                                'approved'
+                                                $request->status === 'approved'
                                                 &&
                                                 $bloodSample
                                                 &&
@@ -914,71 +638,43 @@
                                                         'sample-requests.home-collection.create',
                                                         $request
                                                     ) }}"
-                                                    class="inline-flex
-                                                           items-center
-                                                           justify-center
-                                                           px-4 py-2
-                                                           rounded-lg
-                                                           bg-purple-600
-                                                           text-white
-                                                           text-sm
-                                                           font-semibold
+                                                    class="inline-flex items-center justify-center
+                                                           px-4 py-2 rounded-lg
+                                                           bg-purple-600 text-white
+                                                           text-sm font-semibold
                                                            hover:bg-purple-700"
                                                 >
                                                     🏠 Home Collection
                                                 </a>
 
-
-                                                <div
-                                                    class="text-xs
-                                                           text-gray-500
-                                                           mt-2"
-                                                >
-                                                    Schedule collection
-                                                    from your location.
+                                                <div class="text-xs text-gray-500 mt-2">
+                                                    Schedule collection from your location.
                                                 </div>
 
 
+                                            @elseif($request->status === 'pending')
 
-                                            @elseif(
-                                                $request->status
-                                                ===
-                                                'pending'
-                                            )
-
-                                                <span
-                                                    class="text-sm
-                                                           text-gray-400"
-                                                >
+                                                <span class="text-sm text-gray-400">
                                                     Available after approval
                                                 </span>
 
 
-
                                             @elseif($transportation)
 
-                                                <span
-                                                    class="text-sm
-                                                           text-gray-400"
-                                                >
+                                                <span class="text-sm text-gray-400">
                                                     Normal collection already arranged
                                                 </span>
 
 
-
                                             @else
 
-                                                <span
-                                                    class="text-sm
-                                                           text-gray-400"
-                                                >
+                                                <span class="text-sm text-gray-400">
                                                     Not available
                                                 </span>
 
                                             @endif
 
                                         </td>
-
 
 
                                         {{-- TRACKING --}}
@@ -991,14 +687,10 @@
                                                         'sample-requests.tracking',
                                                         $request
                                                     ) }}"
-                                                    class="inline-flex
-                                                           items-center
-                                                           px-4 py-2
-                                                           rounded-lg
-                                                           bg-blue-600
-                                                           text-white
-                                                           text-sm
-                                                           font-semibold
+                                                    class="inline-flex items-center
+                                                           px-4 py-2 rounded-lg
+                                                           bg-blue-600 text-white
+                                                           text-sm font-semibold
                                                            hover:bg-blue-700"
                                                 >
                                                     Track
@@ -1006,10 +698,7 @@
 
                                             @else
 
-                                                <span
-                                                    class="text-sm
-                                                           text-gray-400"
-                                                >
+                                                <span class="text-sm text-gray-400">
                                                     Not available
                                                 </span>
 

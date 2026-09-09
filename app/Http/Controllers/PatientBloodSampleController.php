@@ -57,7 +57,6 @@ class PatientBloodSampleController extends Controller
         );
     }
 
-
     /**
      * Display the patient's blood sample donation form.
      */
@@ -72,7 +71,6 @@ class PatientBloodSampleController extends Controller
 
         return view('patient.blood-samples.create');
     }
-
 
     /**
      * Store a new blood sample donation.

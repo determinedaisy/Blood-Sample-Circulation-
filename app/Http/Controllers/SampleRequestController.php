@@ -25,47 +25,72 @@ class SampleRequestController extends Controller
     */
 
     public function patientIndex()
-    {
-        if (!Auth::check() || Auth::user()->role !== 'patient') {
-            abort(403);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | PATIENT SAMPLE REQUESTS
-        |--------------------------------------------------------------------------
-        |
-        | This page should ONLY show requests that are still waiting
-        | for administrator approval.
-        |
-        | Once the administrator approves the request, it disappears
-        | from Sample Requests.
-        |
-        | The resulting blood sample will appear in My Blood Samples
-        | once laboratory review is completed.
-        |
-        */
-
-        $requests = SampleRequest::with([
-            'requester',
-            'approver',
-            'assignedDoctor.doctorProfile',
-            'homeCollection.assignedCollector',
-            'bloodSample.transportations.transporter',
-            'bloodSample.transportations.collectionCenter',
-            'bloodSample.transportations.laboratory',
-        ])
-            ->where('patient_id', Auth::id())
-            ->where('status', 'pending')
-            ->latest()
-            ->get();
-
-        return view(
-            'sample-requests.patient_index',
-            compact('requests')
-        );
+{
+    if (!Auth::check() || Auth::user()->role !== 'patient') {
+        abort(403);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | PENDING SAMPLE REQUESTS
+    |--------------------------------------------------------------------------
+    |
+    | Only requests waiting for administrator approval appear here.
+    |
+    */
+    $requests = SampleRequest::with([
+        'requester',
+        'approver',
+        'assignedDoctor.doctorProfile',
+        'homeCollection.assignedCollector',
+        'bloodSample.transportations.transporter',
+        'bloodSample.transportations.collectionCenter',
+        'bloodSample.transportations.laboratory',
+    ])
+        ->where('patient_id', Auth::id())
+        ->where('status', 'pending')
+        ->latest()
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACTIVE SAMPLE TRACKING
+    |--------------------------------------------------------------------------
+    |
+    | Approved/processing requests must remain accessible even after
+    | the patient logs out and logs back in.
+    |
+    | Final accepted/rejected samples are handled by My Blood Samples,
+    | so they are excluded here.
+    |
+    */
+    $activeRequests = SampleRequest::with([
+        'requester',
+        'approver',
+        'assignedDoctor.doctorProfile',
+        'homeCollection.assignedCollector',
+        'bloodSample.transportations.transporter',
+        'bloodSample.transportations.collectionCenter',
+        'bloodSample.transportations.laboratory',
+    ])
+        ->where('patient_id', Auth::id())
+        ->whereIn('status', [
+            'approved',
+        ])
+        ->whereHas('bloodSample', function ($query) {
+            $query->whereNotIn('status', [
+                'accepted',
+                'rejected',
+            ]);
+        })
+        ->latest()
+        ->get();
+
+    return view(
+        'sample-requests.patient_index',
+        compact('requests', 'activeRequests')
+    );
+}
 
     public function create()
     {
@@ -955,12 +980,7 @@ class SampleRequestController extends Controller
             )
         );
 
-        if ($sampleRequest->bloodSample) {
 
-            $sampleRequest
-                ->bloodSample
-                ->delete();
-        }
 
         return back()->with(
             'success',
